@@ -33,6 +33,7 @@ var level = [
 	[4,1,1,1,1,1,4],
 	[0,0,0,0,0,0,0]
 ];
+var level_random = [];
 var animate = 0;
 var animateTo;
 var animSpeed = 7;
@@ -273,22 +274,45 @@ $(function(){
 	TranslateX = (width - blockSize*circlesCount)/2;
 	TranslateY = (height - blockSize*circlesCount)/2;
 	ctx.translate(TranslateX,TranslateY);
-
-    for (var i=0; i<(circlesCount); i++) {
+	// -----------------------Перемешивание уровня---------------------
+	var temp;
+	for (var i=0; i<(circlesCount); i++){
+		level_random[i] = [];
+		for(var j = 0; j < (circlesCount); j++)
+			level_random[i][j]=level[i][j];
+	}
+	for (var i=0; i<(circlesCount); i++) {
+		for(var j = 0; j < (circlesCount); j++) {
+			do var i_random=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
+			while(i_random==i);
+			do var j_random=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
+			while(j_random==j);
+			temp=level_random[i][j];
+			level_random[i][j]=level_random[i_random][j_random];
+			level_random[i_random][j_random]=temp;
+		}
+	}
+	// ---------------------------------------------------------------
+	
+	for (var i=0; i<(circlesCount); i++) {
 		circles[i] = [];
 		offsetX[i] = 0.0;
 		offsetY[i] = 0.0;
 		for(var j = 0; j < (circlesCount); j++) {
-			var color = level[i][j];
+			var color = level_random[i][j];
 			circles[i][j] = new Tile(blockSize,color,color);
+			if(level_random[i][j] != level[i][j])
+				circles[i][j].OpenEyes();
+			else
+				circles[i][j].CloseEyes();
 		}
-    }
+	}
 
-    // привязываем событие нажатия мыши (для перетаскивания)
-    $('#scene').mousedown(function(e) {
-        var canvasPosition = $(this).offset();
-        clickX = e.offsetX || 0;
-        clickY = e.offsetY || 0;
+	// привязываем событие нажатия мыши (для перетаскивания)
+	$('#scene').mousedown(function(e) {
+		var canvasPosition = $(this).offset();
+		clickX = e.offsetX || 0;
+		clickY = e.offsetY || 0;
 		if(!blocked)
 		{
 			var cX = Math.floor((clickX-TranslateX)/blockSize);
