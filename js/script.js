@@ -73,6 +73,27 @@ function drawFantom(ctx,color,eye) { // функция рисует окружность
 		}
 }
 
+function processEyes() {
+	var circlesOpenEyes = [];
+	for (var i = 0; i < circlesCount; i++) {
+		for (var j = 0; j < circlesCount; j++) {
+			if (circles[i][j].color != level[i][j]) {
+				if (circles[i][j].drawEyes == false) {
+					circles[i][j].OpenEyes();
+				} else if (circles[i][j].currentEye == 0) {
+					circlesOpenEyes.push(circles[i][j]);
+				}
+			}
+		}
+	}
+	if (circlesOpenEyes.length > 0) {
+		// 4 - чем больше параметр, тем меньшее кол-во моргает
+		if (Math.random() * 4 < circlesOpenEyes.length / (circlesCount * circlesCount)) {
+			circlesOpenEyes[Math.floor(Math.random() * circlesOpenEyes.length)].CloseEyes();
+		}
+	}
+}
+
 function animateMove() {
 	if(offsetX[animationRow] < animateTo)
 	{
@@ -173,6 +194,8 @@ function drawScene() { // главная функция отрисовки
 	if (cur_blockSizeX + jump_stepX > 0.2 || cur_blockSizeX + jump_stepX < -0.2)
 		jump_stepX = -jump_stepX;
 	cur_blockSizeX += jump_stepX;
+
+	processEyes();
 	
 	var transformBlock = {m11:1,
 	m12:0,
@@ -202,21 +225,32 @@ function drawScene() { // главная функция отрисовки
 			{
 				if((moving == 0 && (selectedCircleX==j || selectedCircleY==i)) || (moving == 1 && selectedCircleY==i) || (moving == 2 && selectedCircleX==j))
 					light = 1;
+
+			}
+			if(offsetX[i] != 0)
+			{
+				var fantom_pos;
+				var fantom_pos_x;				
 				if(offsetX[i] > 0)
 				{
 					//Вычислить цвет и координаты блока фантома
 					//Цвет = кол-во блоков - округленное до величины целых блоков смещение - это при движении вправо
 					//Позиция = смещение mod размер блока - х
-					var fantom_pos = (circlesCount - Math.floor(offsetX[i] / blockSize)%circlesCount) - 1
-					var fantom_pos_x = offsetX[i]%blockSize - blockSize;
-					
-					transformBlock.dx = fantom_pos_x + TranslateX;
-					transformBlock.dy = (i*blockSize + offsetY[j])%fieldSize + loopY + TranslateY;
-					
-					draw(function(ctx){
-					drawFantom(ctx, circles[i][fantom_pos].color,circles[i][fantom_pos].drawEyes);
-					},transformBlock);				
+					fantom_pos = (circlesCount - Math.floor(offsetX[i] / blockSize)%circlesCount) - 1;
+					fantom_pos_x = offsetX[i]%blockSize - blockSize;
 				}
+				if(offsetX[i] < 0)
+				{
+					//тут надо взять блок координаты которого находятся на первом местве в ряду
+					fantom_pos = Math.floor(Math.abs(offsetX[i]) / blockSize)%circlesCount;
+					fantom_pos_x = offsetX[i]%blockSize;
+				}
+				transformBlock.dx = fantom_pos_x + TranslateX;
+				transformBlock.dy = (i*blockSize + offsetY[j])%fieldSize + loopY + TranslateY;
+				
+				draw(function(ctx){
+				drawFantom(ctx, circles[i][fantom_pos].color,circles[i][fantom_pos].drawEyes);
+				},transformBlock);	
 			}
 			transformBlock.dx = (j*blockSize + offsetX[i])%fieldSize + loopX + TranslateX;
 			transformBlock.dy = (i*blockSize + offsetY[j])%fieldSize + loopY + TranslateY;
