@@ -261,7 +261,6 @@ function drawScene() { // главная функция отрисовки
 		}
     }
 	ctx.restore();
-	
 }
 
 // -------------------------------------------------------------
@@ -304,6 +303,7 @@ $(function(){
 		border[i] = new Image();
 		border[i].src = 'img/border'+i+'.png';		
 	}
+	
 	
 	TranslateX = (width - blockSize*circlesCount)/2;
 	TranslateY = (height - blockSize*circlesCount)/2;
