@@ -73,6 +73,27 @@ function drawFantom(ctx,color,eye) { // функция рисует окружность
 		}
 }
 
+function processEyes() {
+	var circlesOpenEyes = [];
+	for (var i = 0; i < circlesCount; i++) {
+		for (var j = 0; j < circlesCount; j++) {
+			if (circles[i][j].color != level[i][j]) {
+				if (circles[i][j].drawEyes == false) {
+					circles[i][j].OpenEyes();
+				} else if (circles[i][j].currentEye == 0) {
+					circlesOpenEyes.push(circles[i][j]);
+				}
+			}
+		}
+	}
+	if (circlesOpenEyes.length > 0) {
+		// 4 - чем больше параметр, тем меньшее кол-во моргает
+		if (Math.random() * 4 < circlesOpenEyes.length / (circlesCount * circlesCount)) {
+			circlesOpenEyes[Math.floor(Math.random() * circlesOpenEyes.length)].CloseEyes();
+		}
+	}
+}
+
 function animateMove() {
 	if(offsetX[animationRow] < animateTo)
 	{
@@ -173,6 +194,8 @@ function drawScene() { // главная функция отрисовки
 	if (cur_blockSizeX + jump_stepX > 0.2 || cur_blockSizeX + jump_stepX < -0.2)
 		jump_stepX = -jump_stepX;
 	cur_blockSizeX += jump_stepX;
+
+	processEyes();
 	
 	var transformBlock = {m11:1,
 	m12:0,
