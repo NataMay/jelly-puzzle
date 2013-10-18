@@ -11,6 +11,7 @@ var circlesCount = 7; // мы нарисуем 7 окружностей
 var width;
 var height;
 var blockSize = 66;
+var sprite_size = 48
 var fieldSize = blockSize * circlesCount;
 var moving = 0; // 0-никуда 1-перемещение строки 2-перемещение столбца
 var TranslateX = 0;
@@ -19,6 +20,8 @@ var dMove = 5;
 var Candies = [];
 var Candies_light = [];
 var eyes = [];
+var eyes_sprite;
+var candies_sprite;
 var border = [];
 var jump_stepX = 0.07;
 var jump_stepY = -1;
@@ -41,6 +44,7 @@ var blocked = false;
 var animationRow;
 var AnimateID;
 var CountShift=20;
+var circlesOpenEyes = [];
 
 // -------------------------------------------------------------
 
@@ -63,117 +67,145 @@ function clear() { // функция очищает canvas
 	ctx.restore();
 }
 
-function drawFantom(ctx,color,eye) { // функция рисует окружность
-		ctx.drawImage(Candies_light[color],1,1,64,64);
+function drawFantom(ctx,color,eye,light) { // функция рисует окружность
+		//if(light)
+		//	ctx.drawImage(Candies_light[color],1,1,blockSize-1,blockSize-1);
+		//else
+		//	ctx.drawImage(Candies[color],1,1,blockSize-1,blockSize-1);
+		var border = Math.ceil((blockSize*0.04)/2);		
+		ctx.drawImage(candies_sprite,
+			color*sprite_size,
+			light*sprite_size,
+			sprite_size,sprite_size,
+			border,border,
+			blockSize-border,
+			blockSize-border);
 		if(eye)
 		{
 			ctx.save();
-			ctx.translate((blockSize-eyes[color][0].width)/2-1,(blockSize-eyes[color][0].height)/2);
-			ctx.drawImage(eyes[color][0],0,0);
+			///ctx.translate((blockSize-eyes[color][0].width)/2-1,(blockSize-eyes[color][0].height)/20,size/4);
+			ctx.translate(0,blockSize/4);
+
+			ctx.drawImage(eyes_sprite,0,
+				color*(sprite_size/2),
+				sprite_size,
+				sprite_size/2,
+				border*2,
+				border*2,
+				blockSize-border*3,
+				blockSize/2-border*2);
 			ctx.restore();
 		}
 }
 
-function processEyes() {
-	var circlesOpenEyes = [];
+function UpdateEyes() {
+	circlesOpenEyes = [];
 	for (var i = 0; i < circlesCount; i++) {
 		for (var j = 0; j < circlesCount; j++) {
 			if (circles[i][j].color != level[i][j]) {
-				if (circles[i][j].drawEyes == false) {
-					circles[i][j].OpenEyes();
-				} else if (circles[i][j].currentEye == 0) {
 					circlesOpenEyes.push(circles[i][j]);
-				}
+					circles[i][j].OpenEyes();
 			}
+			else
+			circles[i][j].CloseEyes();
 		}
 	}
+}
+
+function processEyes() {
+	for (var i = 0; i <  circlesOpenEyes.length; i++) {
+		if (circlesOpenEyes[i].drawEyes == false) 
+			circlesOpenEyes[i].OpenEyes();
+	}
+
 	if (circlesOpenEyes.length > 0) {
 		// 4 - чем больше параметр, тем меньшее кол-во моргает
-		if (Math.random() * 4 < circlesOpenEyes.length / (circlesCount * circlesCount)) {
+		if (Math.random() * 8 < circlesOpenEyes.length / (circlesCount * circlesCount)) {
 			circlesOpenEyes[Math.floor(Math.random() * circlesOpenEyes.length)].CloseEyes();
 		}
 	}
 }
 
-function animateMove() {
-	if(offsetX[animationRow] < animateTo)
+function shiftRow(k,n) {
+	var b = [];
+	
+	if(n != 0)
 	{
-		if(Math.abs(offsetX[animationRow] - animateTo) >= animSpeed)
-			offsetX[animationRow] += animSpeed;
-		else
+		if(n>0)
 		{
-			offsetX[animationRow] = animateTo;
+			for (var i = circlesCount-1; i >= 0; i--) {
+				if(i+n >= circlesCount){
+					b[i+n-circlesCount] = circles[k][i];
+				}
+				else{
+					b[i+n] = circles[k][i];
+				}
+				
+			}
 		}
-		
-	}
-	if(offsetX[animationRow] > animateTo)
-	{
-		if(Math.abs(offsetX[animationRow] - animateTo) >= animSpeed)
-			offsetX[animationRow] -= animSpeed;
-		else
+		if(n<0)
 		{
-			offsetX[animationRow] = animateTo;
+			n = Math.abs(n);
+			for (var i = circlesCount-1; i >= 0; i--) {
+				if(i-n < 0){
+					b[i-n+circlesCount] = circles[k][i];
+				}
+				else{
+					b[i-n] = circles[k][i];
+				}
+			}				
 		}
+		circles[k] = b;
 	}
+	blocked = false;
+}
 
-	if(offsetX[animationRow] === animateTo)
+function shiftColl(k,n) {
+	var b = [];
+	
+	if(n != 0)
 	{
-		console.log(animationRow);
-		clearInterval(AnimateID);
-		var b = [];
-		var n = Math.floor(animateTo / blockSize)%circlesCount;
-		if(n != 0)
+		if(n>0)
 		{
-			if(n>0)
-			{
-				for (var i = circlesCount-1; i >= 0; i--) {
-					if(i+n >= circlesCount){
-						b[i+n-circlesCount] = circles[animationRow][i];
-					}
-					else{
-						b[i+n] = circles[animationRow][i];
-					}
+			for (var i = circlesCount-1; i >= 0; i--) {
+				if(i+n >= circlesCount){
+					b[i+n-circlesCount] = circles[i][k];
+				}
+				else{
+					b[i+n] = circles[i][k];
 				}
 			}
-			if(n<0)
-			{
-				n = Math.abs(n);
-				for (var i = circlesCount-1; i >= 0; i--) {
-					if(i-n < 0){
-						b[i-n+circlesCount] = circles[animationRow][i];
-					}
-					else{
-						b[i-n] = circles[animationRow][i];
-					}
-				}				
-			}
-			circles[animationRow] = b;
-		}
-		//offsetX[selectedCircleY] = 0.0;
-		for (var i = 0; i < circlesCount; i++)
+		} 
+		if(n<0)
 		{
-			if(circles[animationRow][i].color != level[animationRow][i])
-				circles[animationRow][i].OpenEyes();
-			else
-				circles[animationRow][i].CloseEyes();
+			n = Math.abs(n);
+			for (var i = circlesCount-1; i >= 0; i--) {
+				if(i-n < 0){
+					b[i-n+circlesCount] = circles[i][k];
+				}
+				else{
+					b[i-n] = circles[i][k];
+				}
+			}					
 		}
-		blocked = false;
-		offsetX[animationRow] = 0;
+		for(var i = 0; i < circlesCount; i++)
+		{
+			circles[i][k] = b[i];
+		}
 	}
-
-
+	blocked = false;
 }
 
 function drawField() {
-	ctx.drawImage(border[0],-blockSize/2,-blockSize/2);
-	ctx.drawImage(border[3],-blockSize/2,blockSize*(circlesCount-1) + blockSize/2);
-	ctx.drawImage(border[1],blockSize*(circlesCount-1)+blockSize/2,-blockSize/2);
-	ctx.drawImage(border[2],blockSize*(circlesCount-1) + blockSize/2,blockSize*(circlesCount-1) + blockSize/2);
+	ctx.drawImage(border[0],-blockSize/2,-blockSize/2,blockSize,blockSize);
+	ctx.drawImage(border[3],-blockSize/2,blockSize*(circlesCount-1) + blockSize/2,blockSize,blockSize);
+	ctx.drawImage(border[1],blockSize*(circlesCount-1)+blockSize/2,-blockSize/2,blockSize,blockSize);
+	ctx.drawImage(border[2],blockSize*(circlesCount-1) + blockSize/2,blockSize*(circlesCount-1) + blockSize/2,blockSize,blockSize);
 	for (var i=0; i<circlesCount-1; i++) {
-		ctx.drawImage(border[5],-blockSize/2,blockSize*i + blockSize/2);
-		ctx.drawImage(border[7],blockSize*(circlesCount-1) + blockSize/2,blockSize*i + blockSize/2);
-		ctx.drawImage(border[6],blockSize*i + blockSize/2,-blockSize/2);
-		ctx.drawImage(border[4],blockSize*i + blockSize/2,blockSize*(circlesCount-1) + blockSize/2);
+		ctx.drawImage(border[5],-blockSize/2,blockSize*i + blockSize/2,blockSize,blockSize);
+		ctx.drawImage(border[7],blockSize*(circlesCount-1) + blockSize/2,blockSize*i + blockSize/2,blockSize,blockSize);
+		ctx.drawImage(border[6],blockSize*i + blockSize/2,-blockSize/2,blockSize,blockSize);
+		ctx.drawImage(border[4],blockSize*i + blockSize/2,blockSize*(circlesCount-1) + blockSize/2,blockSize,blockSize);
 	}
 }
 	
@@ -250,7 +282,33 @@ function drawScene() { // главная функция отрисовки
 				transformBlock.dy = (i*blockSize + offsetY[j])%fieldSize + loopY + TranslateY;
 				
 				draw(function(ctx){
-				drawFantom(ctx, circles[i][fantom_pos].color,circles[i][fantom_pos].drawEyes);
+				drawFantom(ctx, circles[i][fantom_pos].color,circles[i][fantom_pos].drawEyes,light);
+				},transformBlock);	
+			}
+			if(offsetY[j] != 0)
+			{
+				var fantom_pos;
+				var fantom_pos_y;
+				if(offsetY[j] > 0)
+				{
+					//Вычислить цвет и координаты блока фантома
+					//Цвет = кол-во блоков - округленное до величины целых блоков смещение - это при движении вправо
+					//Позиция = смещение mod размер блока - х
+					fantom_pos = (circlesCount - Math.floor(offsetY[j] / blockSize)%circlesCount) - 1;
+					fantom_pos_y = offsetY[j]%blockSize - blockSize;
+				}
+				if(offsetY[j] < 0)
+				{
+					//тут надо взять блок координаты которого находятся на первом месте в ряду
+					fantom_pos = Math.floor(Math.abs(offsetY[j]) / blockSize)%circlesCount;
+					fantom_pos_y = offsetY[j]%blockSize;
+				}
+				//console.log(fantom_pos,fantom_pos_y);
+				transformBlock.dx = (j*blockSize + offsetX[i])%fieldSize + loopX + TranslateX;
+				transformBlock.dy = fantom_pos_y + TranslateY;
+				
+				draw(function(ctx){
+				drawFantom(ctx, circles[fantom_pos][j].color,circles[fantom_pos][j].drawEyes,light);
 				},transformBlock);	
 			}
 			transformBlock.dx = (j*blockSize + offsetX[i])%fieldSize + loopX + TranslateX;
@@ -266,27 +324,62 @@ function drawScene() { // главная функция отрисовки
 }
 
 // -------------------------Перемешивание уровня----------------------
-function RandomShift(napravl,nomer,kol){
-	var b = [];
-	var n = kol;
-	if(napravl==1){
-		//сдвинуть кружочки в массиве по горизонтали
-		if(n>0){
-			for (var i = circlesCount-1; i >= 0; i--)
-				if(i+n >= circlesCount) b[i+n-circlesCount] = level_random[nomer][i];
-				else b[i+n] = level_random[nomer][i];
+function RandomShift(){
+	var napravl=Math.floor(Math.random() * 2);
+	do var kol=Math.floor(Math.random() * ((circlesCount-1) - (-(circlesCount-1)) + 1)) - (circlesCount-1);
+	while(kol==0);
+	//console.log(kol);
+	var nomer=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
+	var tween = new Kinetic.Tween({
+		node: 0,
+		x: kol*blockSize,
+		duration: 0.1,
+		//easing: Kinetic.Easings.ElasticEaseOut,
+		onStep: function(i) {
+			if(napravl == 0)
+				offsetX[nomer] = i;
+			else
+				offsetY[nomer] = i;
+		},
+		onFinish: function() {
+			var n = kol%circlesCount
+			if(napravl == 0)
+			{
+				shiftRow(nomer,n);
+				offsetX[nomer] = 0;
+			}
+			else
+			{
+				shiftColl(nomer,n);
+				offsetY[nomer] = 0.0;
+			}
+			if(CountShift == 0)
+			{
+				for (var i = 0; i < circlesCount; i++) {
+					for (var j = 0; j < circlesCount; j++) {
+						if (circles[i][j].color != level[i][j]) {
+							circles[i][j].OpenEyes();
+						}
+					}
+				}
+				circlesOpenEyes = [];
+				for (var i = 0; i < circlesCount; i++) {
+					for (var j = 0; j < circlesCount; j++) {
+						if (circles[i][j].color != level[i][j]) {
+							circlesOpenEyes.push(circles[i][j]);
+						}
+					}
+				}
+				blocked = false;
+			}
+			else
+			{
+				RandomShift();
+				CountShift--;
+			}
 		}
-		level_random[nomer] = b;
-	}else{
-		//сдвинуть кружочки в массиве по вертикали
-		if(n>0){
-			for (var i = circlesCount-1; i >= 0; i--)
-				if(i+n >= circlesCount) b[i+n-circlesCount] = level_random[i][nomer];
-				else b[i+n] =level_random[i][nomer];
-		}
-		for(var i = 0; i < circlesCount; i++)
-			level_random[i][nomer] = b[i];
-	}
+	});
+	tween.play();        
 }
 
 // инициализация
@@ -295,6 +388,33 @@ $(function(){
     ctx = canvas.getContext('2d');
 	width = canvas.width = $(window).width();
 	height = canvas.height = $(window).height();
+	blockSize = Math.floor((height - height*0.1)/circlesCount);
+	
+	var avaliable_sizes = [48,64,128,256];
+	var b;
+	for(var i = 0; i < avaliable_sizes.length; i++)
+	{
+		if(i != avaliable_sizes.length - 1)
+		{
+			b = (avaliable_sizes[i+1] - avaliable_sizes[i]) * 0.2 + avaliable_sizes[i];
+			console.log(b);
+			
+			if(blockSize > avaliable_sizes[i] && blockSize < b)
+			{
+				sprite_size = avaliable_sizes[i];
+				break;
+			}
+			if(blockSize > b && blockSize < avaliable_sizes[i+1])
+			{
+				sprite_size = avaliable_sizes[i+1];
+				break;
+			}
+		}
+		else
+			sprite_size = avaliable_sizes[avaliable_sizes.length - 1];
+	}
+	//console.log(blockSize, sprite_size);
+	fieldSize = blockSize * circlesCount;
   /*  width = canvas.width;
     height = canvas.height;*/
 	
@@ -321,38 +441,35 @@ $(function(){
 		}
 	}
 	
+	candies_sprite = new Image();
+	candies_sprite.src = 'img_'+sprite_size+'/candy_sprite.png';
+	candies_sprite.onload = function() {}        
+	
+	eyes_sprite = new Image();
+	eyes_sprite.src = 'img_'+sprite_size+'/eyes_sprite.png';
+	eyes_sprite.onload = function() {}        
+	
 	for(var i = 0; i < 8; i++)
 	{
 		border[i] = new Image();
-		border[i].src = 'img/border'+i+'.png';		
+		border[i].src = 'img/border'+i+'.png';                
 	}
 	
 	TranslateX = (width - blockSize*circlesCount)/2;
 	TranslateY = (height - blockSize*circlesCount)/2;
 	ctx.translate(TranslateX,TranslateY);
-	// -----------------------Перемешивание уровня---------------------
-	level_random = $.extend(true, [], level);
-	var napravl=1;
-	for(var i=0;i<CountShift;i++){
-		if(napravl==2)napravl=1;
-		else napravl=2;
-		do var kol=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
-		while(kol==0);
-		var nomer=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
-		RandomShift(napravl,nomer,kol);
-	}
-	// ---------------------------------------------------------------
 	
 	for (var i=0; i<(circlesCount); i++) {
-		circles[i] = [];
+			circles[i] = [];
 		offsetX[i] = 0.0;
 		offsetY[i] = 0.0;
 		for(var j = 0; j < (circlesCount); j++) {
-			var color = level_random[i][j];
-			circles[i][j] = new Tile(blockSize,color,color);
+			var color = level[i][j];
+			circles[i][j] = new Tile(blockSize,color,color,sprite_size);
 		}
 	}
 
+	RandomShift();
 	// привязываем событие нажатия мыши (для перетаскивания)
 	$('#scene').mousedown(function(e) {
 		var canvasPosition = $(this).offset();
@@ -416,60 +533,36 @@ $(function(){
 				{
 					if(Math.abs(mX) > blockSize/2)
 					{
-						//offsetX[selectedCircleY] = offsetX[selectedCircleY] - mX + (mX > 0 ? blockSize : 0-blockSize);
 						animateTo = offsetX[selectedCircleY] - mX + (mX > 0 ? blockSize : 0-blockSize);
-						//blocked = true;
 					}
 					else
 					{
-						//offsetX[selectedCircleY] = offsetX[selectedCircleY] - mX;
 						animateTo = offsetX[selectedCircleY] -mX;
-						//blocked = true;
 					}
 					blocked = true;
-					animationRow = selectedCircleY;
-					AnimateID = setInterval(animateMove, 30);
-				
+					var animationRow = selectedCircleY;
+					selectedCircleX = undefined;
+					selectedCircleY = undefined;
+					
+					var tween = new Kinetic.Tween({
+						node: offsetX[animationRow],
+						x: animateTo,
+						duration: 0.1,
+						onStep: function(i) {
+								offsetX[animationRow] = i;
+						},
+						onFinish: function() {
+							var n = Math.floor(animateTo / blockSize)%circlesCount;
+							
+							shiftRow(animationRow,n);
+							UpdateEyes();
+							offsetX[animationRow] = 0;
+							moving = 0;
+							//console.log(offsetX[animationRow]);
+							}
+						});
+					tween.play();
 				}
-				
-				//сдвинуть кружочки в массиве
-				/*var b = [];
-				var n = Math.floor(animateTo / blockSize)%circlesCount;
-				if(n != 0)
-				{
-					if(n>0)
-					{
-						for (var i = circlesCount-1; i >= 0; i--) {
-							if(i+n >= circlesCount){
-								b[i+n-circlesCount] = circles[selectedCircleY][i];
-							}
-							else{
-								b[i+n] = circles[selectedCircleY][i];
-							}
-						}
-					}
-					if(n<0)
-					{
-						n = Math.abs(n);
-						for (var i = circlesCount-1; i >= 0; i--) {
-							if(i-n < 0){
-								b[i-n+circlesCount] = circles[selectedCircleY][i];
-							}
-							else{
-								b[i-n] = circles[selectedCircleY][i];
-							}
-						}				
-					}
-					circles[selectedCircleY] = b;
-				}
-				//offsetX[selectedCircleY] = 0.0;
-				for (var i = 0; i < circlesCount; i++)
-				{
-					if(circles[selectedCircleY][i].color != level[selectedCircleY][i])
-						circles[selectedCircleY][i].OpenEyes();
-					else
-						circles[selectedCircleY][i].CloseEyes();
-				}*/
 			}
 		}
 		if(moving == 2)
@@ -481,56 +574,43 @@ $(function(){
 				{
 					if(Math.abs(mY) > blockSize/2)
 					{
-						offsetY[selectedCircleX] = offsetY[selectedCircleX] - mY + (mY > 0 ? blockSize : 0-blockSize);
+						animateTo = offsetY[selectedCircleX] - mY + (mY > 0 ? blockSize : 0-blockSize);
 					}
 					else
-						offsetY[selectedCircleX] = offsetY[selectedCircleX] - mY;
-				
-				}				
-				var b = [];
-				var n = Math.floor(offsetY[selectedCircleX] / blockSize)%circlesCount;
-				
-				if(n != 0)
-				{
-					if(n>0)
 					{
-						for (var i = circlesCount-1; i >= 0; i--) {
-							if(i+n >= circlesCount){
-								b[i+n-circlesCount] = circles[i][selectedCircleX];
-							}
-							else{
-								b[i+n] = circles[i][selectedCircleX];
-							}
+						animateTo = offsetY[selectedCircleX] - mY;
+					}
+					blocked = true;
+					var animationRow = selectedCircleX;
+					selectedCircleX = undefined;
+					selectedCircleY = undefined;
+
+					var tween = new Kinetic.Tween({
+						node: offsetY[animationRow],
+						x: animateTo,
+						duration: 0.1,
+						onStep: function(i) {
+								offsetY[animationRow] = i;
+						},
+						onFinish: function() {
+							var n = Math.floor(animateTo / blockSize)%circlesCount;
+							
+							shiftColl(animationRow,n);
+							UpdateEyes();
+							offsetY[animationRow] = 0;
+							moving = 0;
+							//console.log(offsetY[animationRow]);
 						}
-					} 
-					if(n<0)
-					{
-						n = Math.abs(n);
-						for (var i = circlesCount-1; i >= 0; i--) {
-							if(i-n < 0){
-								b[i-n+circlesCount] = circles[i][selectedCircleX];
-							}
-							else{
-								b[i-n] = circles[i][selectedCircleX];
-							}
-						}					
-					}
-					for(var i = 0; i < circlesCount; i++)
-					{
-						circles[i][selectedCircleX] = b[i];
-						if(circles[i][selectedCircleX].color != level[i][selectedCircleX])
-							circles[i][selectedCircleX].OpenEyes();
-						else
-							circles[i][selectedCircleX].CloseEyes();
-					}
-				}
-				//circles[selectedCircleY] = b;
-				offsetY[selectedCircleX] = 0.0;
-			}		
+					});
+					tween.play();
+			}
+	}
+}
+		if(moving == 0)
+		{
+			selectedCircleX = undefined;
+			selectedCircleY = undefined;			
 		}
-		moving = 0;
-        selectedCircleX = undefined;
-		selectedCircleY = undefined;
     });
 
     setInterval(drawScene, 30); // скорость отрисовки
