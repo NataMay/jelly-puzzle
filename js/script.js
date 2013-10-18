@@ -40,6 +40,7 @@ var animSpeed = 7;
 var blocked = false;
 var animationRow;
 var AnimateID;
+var CountShift=20;
 
 // -------------------------------------------------------------
 
@@ -264,10 +265,31 @@ function drawScene() { // главная функция отрисовки
 	
 }
 
-// -------------------------------------------------------------
+// -------------------------Перемешивание уровня----------------------
+function RandomShift(napravl,nomer,kol){
+	var b = [];
+	var n = kol;
+	if(napravl==1){
+		//сдвинуть кружочки в массиве по горизонтали
+		if(n>0){
+			for (var i = circlesCount-1; i >= 0; i--)
+				if(i+n >= circlesCount) b[i+n-circlesCount] = level_random[nomer][i];
+				else b[i+n] = level_random[nomer][i];
+		}
+		level_random[nomer] = b;
+	}else{
+		//сдвинуть кружочки в массиве по вертикали
+		if(n>0){
+			for (var i = circlesCount-1; i >= 0; i--)
+				if(i+n >= circlesCount) b[i+n-circlesCount] = level_random[i][nomer];
+				else b[i+n] =level_random[i][nomer];
+		}
+		for(var i = 0; i < circlesCount; i++)
+			level_random[i][nomer] = b[i];
+	}
+}
 
 // инициализация
-
 $(function(){
     canvas = document.getElementById('scene');
     ctx = canvas.getContext('2d');
@@ -309,22 +331,15 @@ $(function(){
 	TranslateY = (height - blockSize*circlesCount)/2;
 	ctx.translate(TranslateX,TranslateY);
 	// -----------------------Перемешивание уровня---------------------
-	var temp;
-	for (var i=0; i<(circlesCount); i++){
-		level_random[i] = [];
-		for(var j = 0; j < (circlesCount); j++)
-			level_random[i][j]=level[i][j];
-	}
-	for (var i=0; i<(circlesCount); i++) {
-		for(var j = 0; j < (circlesCount); j++) {
-			do var i_random=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
-			while(i_random==i);
-			do var j_random=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
-			while(j_random==j);
-			temp=level_random[i][j];
-			level_random[i][j]=level_random[i_random][j_random];
-			level_random[i_random][j_random]=temp;
-		}
+	level_random = $.extend(true, [], level);
+	var napravl=1;
+	for(var i=0;i<CountShift;i++){
+		if(napravl==2)napravl=1;
+		else napravl=2;
+		do var kol=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
+		while(kol==0);
+		var nomer=Math.floor(Math.random() * ((circlesCount-1) - 0 + 1)) + 0;
+		RandomShift(napravl,nomer,kol);
 	}
 	// ---------------------------------------------------------------
 	
@@ -335,10 +350,6 @@ $(function(){
 		for(var j = 0; j < (circlesCount); j++) {
 			var color = level_random[i][j];
 			circles[i][j] = new Tile(blockSize,color,color);
-			if(level_random[i][j] != level[i][j])
-				circles[i][j].OpenEyes();
-			else
-				circles[i][j].CloseEyes();
 		}
 	}
 
@@ -417,7 +428,6 @@ $(function(){
 					}
 					blocked = true;
 					animationRow = selectedCircleY;
-					console.log(offsetX[selectedCircleY], animateTo);
 					AnimateID = setInterval(animateMove, 30);
 				
 				}
@@ -479,6 +489,7 @@ $(function(){
 				}				
 				var b = [];
 				var n = Math.floor(offsetY[selectedCircleX] / blockSize)%circlesCount;
+				
 				if(n != 0)
 				{
 					if(n>0)
