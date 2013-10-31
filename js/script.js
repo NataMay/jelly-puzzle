@@ -545,7 +545,7 @@ $(function(){
 	TranslateX = (width - blockSize*circlesCount)/2;
 	TranslateY = (height - blockSize*circlesCount)/2;
 	ctx.translate(TranslateX,TranslateY);
-	menu = new Menu(fieldSize, fieldSize,levels.length);
+	menu = new Menu(fieldSize, fieldSize, width, height, levels.length);
 	menu.newGame = startGame;
 	
 	// привязываем событие нажатия мыши (для перетаскивания)
