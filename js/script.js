@@ -7,11 +7,10 @@ var offsetY = [];
 var Dmove = 10.0;
 var clickX;
 var clickY;
-var circlesCount = 7; // мы нарисуем 7 окружностей
 var width;
 var height;
 var blockSize = 66;
-var sprite_size = 48
+var sprite_size = 48;
 var fieldSize = blockSize * circlesCount;
 var moving = 0; // 0-никуда 1-перемещение строки 2-перемещение столбца
 var TranslateX = 0;
@@ -27,15 +26,26 @@ var jump_stepX = 0.07;
 var jump_stepY = -1;
 var cur_blockSizeX = 0.2;
 var cur_blockSizeY = blockSize;
-var level = [
-	[0,0,0,0,0,0,0],
-	[4,1,1,1,1,1,4],
-	[4,1,2,2,2,1,4],
-	[4,1,2,3,2,1,4],
-	[4,1,2,2,2,1,4],
-	[4,1,1,1,1,1,4],
-	[0,0,0,0,0,0,0]
-];
+var currentLevel = 0;
+var levels = [
+    [0,[[1,1,1,1],[1,1,1,1],[0,0,0,0],[0,0,0,0]]],
+    [1,[[2,2,2,2],[2,0,0,0],[2,0,0,0],[2,0,0,0]]],
+    [2,[[1,1,1,1],[2,2,2,2],[1,1,1,1],[2,2,2,2]]],
+    [3,[[0,0,0,0],[0,3,3,0],[0,3,3,0],[0,0,0,0]]],
+    [4,[[3,2,2,3],[2,3,3,2],[2,3,3,2],[3,2,2,3]]],
+    [5,[[1,1,1,1],[0,0,0,0],[2,2,2,2],[1,1,1,1]]],
+    [6,[[3,2,2,3],[4,3,3,4],[4,3,3,4],[3,2,2,3]]],
+    [7,[[5,5,1,6],[5,1,6,5],[1,6,5,5],[6,5,5,5]]],
+    [8,[[0,0,0,0],[4,3,3,4],[0,2,2,0],[4,3,3,4]]],
+    [9,[[0,0,0,0],[2,5,5,2],[2,0,0,2],[0,0,0,0]]],
+    [10,[[1,1,1,1,1],[1,5,5,5,1],[1,5,3,5,1],[1,5,5,5,1],[1,1,1,1,1]]],
+    [11,[[2,0,0,0,0],[5,2,0,0,0],[5,5,2,0,0],[5,5,5,2,0],[5,5,5,5,2]]],
+    [12,[[4,4,1,1,1],[4,4,4,6,6],[6,6,4,6,6],[6,6,4,4,4],[1,1,1,4,4]]],
+    [13,[[2,2,5,2,2],[2,3,5,3,2],[2,3,3,3,2],[2,3,5,3,2],[2,2,5,2,2]]],
+    [14,[[1,0,1,0,1],[1,4,1,4,1],[4,4,4,4,4],[0,1,1,1,0],[1,0,1,0,1]]]
+]
+var circlesCount=levels[currentLevel][1].length; //= 7; // мы нарисуем n окружностей
+var fieldSize = blockSize * circlesCount;
 var level_random = [];
 var animate = 0;
 var animateTo;
@@ -45,7 +55,9 @@ var animationRow;
 var AnimateID;
 var CountShift=20;
 var circlesOpenEyes = [];
-
+var sounds = [];
+var backgroundSound;
+var menu;
 // -------------------------------------------------------------
 
 function draw(func, transform){
@@ -68,10 +80,6 @@ function clear() { // функция очищает canvas
 }
 
 function drawFantom(ctx,color,eye,light) { // функция рисует окружность
-		//if(light)
-		//	ctx.drawImage(Candies_light[color],1,1,blockSize-1,blockSize-1);
-		//else
-		//	ctx.drawImage(Candies[color],1,1,blockSize-1,blockSize-1);
 		var border = Math.ceil((blockSize*0.04)/2);		
 		ctx.drawImage(candies_sprite,
 			color*sprite_size,
@@ -83,7 +91,6 @@ function drawFantom(ctx,color,eye,light) { // функция рисует окружность
 		if(eye)
 		{
 			ctx.save();
-			///ctx.translate((blockSize-eyes[color][0].width)/2-1,(blockSize-eyes[color][0].height)/20,size/4);
 			ctx.translate(0,blockSize/4);
 
 			ctx.drawImage(eyes_sprite,0,
@@ -102,7 +109,7 @@ function UpdateEyes() {
 	circlesOpenEyes = [];
 	for (var i = 0; i < circlesCount; i++) {
 		for (var j = 0; j < circlesCount; j++) {
-			if (circles[i][j].color != level[i][j]) {
+			if (circles[i][j].color != levels[currentLevel][1][i][j]) {
 					circlesOpenEyes.push(circles[i][j]);
 					circles[i][j].OpenEyes();
 			}
@@ -208,14 +215,41 @@ function drawField() {
 		ctx.drawImage(border[4],blockSize*i + blockSize/2,blockSize*(circlesCount-1) + blockSize/2,blockSize,blockSize);
 	}
 }
+
+function drawLevel()//отобразить мини уровень
+{
+	var border = Math.ceil((blockSize*0.04)/2);		
+	ctx.save();
+	ctx.translate(-circlesCount*blockSize*0.3-50, 0);//-circlesCount*blockSize*0.3);
+    for (var i=0; i<circlesCount; i++) { // отобразить все окружности
+		for(var j = 0; j < circlesCount; j++) {
+			ctx.save();
+			ctx.translate(j*blockSize*0.301,i*blockSize*0.301);
+			ctx.drawImage(candies_sprite,
+				levels[currentLevel][1][i][j]*sprite_size,
+				0,
+				sprite_size,sprite_size,
+				border,border,
+				blockSize*0.3,
+				blockSize*0.3);
+			ctx.restore();
+		}
+	}
+	ctx.restore();
+}
 	
 function drawScene() { // главная функция отрисовки
     clear(); // очистить canvas
+	
+	if (menu.enabled) {
+		menu.draw(ctx);
+		return;
+	}
 
 	var loopX = 0;
 	var loopY = 0;
 	var light = 0;
-
+	
 	ctx.beginPath();
 	ctx.rect(blockSize/2, blockSize/2, blockSize*(circlesCount-1) + 1, blockSize*(circlesCount-1) + 1);
 	ctx.fillStyle = 'rgba(51,53,52,255)';
@@ -237,10 +271,30 @@ function drawScene() { // главная функция отрисовки
 	dx:0,
 	dy:0};
 	
+	
+	var transformBlock2 = {m11:0.3,
+	m12:0,
+	m21:(animate ? cur_blockSizeX : 0),
+	m22:0.3,
+	dx:0,
+	dy:0};
+	
 	ctx.save();
 	ctx.beginPath();
 	ctx.rect(0, 0, blockSize*circlesCount, blockSize*circlesCount);
 	ctx.clip();
+	
+	for (var i=0; i<circlesCount; i++) { // отобразить мини уровень
+		for(var j = 0; j < circlesCount; j++) {
+		
+		transformBlock2.dx = j*blockSize/3;
+		transformBlock2.dy = i*blockSize/3;
+		draw(function(ctx){
+		drawFantom(ctx, levels[currentLevel][1][i][j],0,0);
+		},transformBlock2);			
+		}	
+	}
+	
     for (var i=0; i<circlesCount; i++) { // отобразить все окружности
 	
 		for(var j = 0; j < circlesCount; j++) {
@@ -320,7 +374,7 @@ function drawScene() { // главная функция отрисовки
 		}
     }
 	ctx.restore();
-	
+	drawLevel();
 }
 
 // -------------------------Перемешивание уровня----------------------
@@ -357,16 +411,16 @@ function RandomShift(){
 			{
 				for (var i = 0; i < circlesCount; i++) {
 					for (var j = 0; j < circlesCount; j++) {
-						if (circles[i][j].color != level[i][j]) {
-							circles[i][j].OpenEyes();
+						if (circles[i][j].color != levels[currentLevel][1][i][j]) {
+								circles[i][j].OpenEyes();
 						}
 					}
 				}
 				circlesOpenEyes = [];
 				for (var i = 0; i < circlesCount; i++) {
 					for (var j = 0; j < circlesCount; j++) {
-						if (circles[i][j].color != level[i][j]) {
-							circlesOpenEyes.push(circles[i][j]);
+						if (circles[i][j].color != levels[currentLevel][1][i][j]) {
+								circlesOpenEyes.push(circles[i][j]);
 						}
 					}
 				}
@@ -379,15 +433,13 @@ function RandomShift(){
 			}
 		}
 	});
-	tween.play();        
+	tween.play();	
 }
 
-// инициализация
-$(function(){
-    canvas = document.getElementById('scene');
-    ctx = canvas.getContext('2d');
-	width = canvas.width = $(window).width();
-	height = canvas.height = $(window).height();
+function startGame(levelNum) {
+	currentLevel = levelNum;
+	circlesCount=levels[currentLevel][1].length; //= 7; // мы нарисуем n окружностей
+	fieldSize = blockSize * circlesCount;
 	blockSize = Math.floor((height - height*0.1)/circlesCount);
 	
 	var avaliable_sizes = [48,64,128,256];
@@ -413,68 +465,101 @@ $(function(){
 		else
 			sprite_size = avaliable_sizes[avaliable_sizes.length - 1];
 	}
-	//console.log(blockSize, sprite_size);
 	fieldSize = blockSize * circlesCount;
-  /*  width = canvas.width;
-    height = canvas.height;*/
-	
-	
-	for(var i = 0; i < 5; i++)
-	{
-		Candies[i] = new Image();
-		Candies[i].src = 'img/candy'+i+'.png';
-		Candies[i].onload = function() {}
-		
-		Candies_light[i] = new Image();
-		Candies_light[i].src = 'img/candy'+i+'_light.png';
-		Candies_light[i].onload = function() {}
-	}
-
-	for(var i = 0; i < 5; i++)
-	{
-		eyes[i] = [];
-		for(var j = 0; j < 5; j ++)
-		{
-			eyes[i][j] = new Image();
-			eyes[i][j].src = 'img/eyes'+i+'.'+j+'.png';
-			eyes[i][j].onload = function() {}
+	for (var i = 0; i < circlesCount; i++) {
+		circles[i] = [];
+		offsetX[i] = 0.0;
+		offsetY[i] = 0.0;
+		for (var j = 0; j < circlesCount; j++) {
+			var color = levels[currentLevel][1][i][j];
+			circles[i][j] = new Tile(blockSize, color, color, sprite_size);
 		}
 	}
+	blocked = true;
+	RandomShift();
+}
+
+// инициализация
+$(function(){
+    canvas = document.getElementById('scene');
+    ctx = canvas.getContext('2d');
+	width = canvas.width = $(window).width();
+	height = canvas.height = $(window).height();
+	
+	blockSize = Math.floor((height - height*0.1)/circlesCount);
+	
+	var avaliable_sizes = [48,64,128,256];
+	var b;
+	for(var i = 0; i < avaliable_sizes.length; i++)
+	{
+		if(i != avaliable_sizes.length - 1)
+		{
+			b = (avaliable_sizes[i+1] - avaliable_sizes[i]) * 0.2 + avaliable_sizes[i];
+			console.log(b);
+			
+			if(blockSize > avaliable_sizes[i] && blockSize < b)
+			{
+				sprite_size = avaliable_sizes[i];
+				break;
+			}
+			if(blockSize > b && blockSize < avaliable_sizes[i+1])
+			{
+				sprite_size = avaliable_sizes[i+1];
+				break;
+			}
+		}
+		else
+			sprite_size = avaliable_sizes[avaliable_sizes.length - 1];
+	}
+	fieldSize = blockSize * circlesCount;
+		
+	// Звуки
+	for(var i = 0; i < 11; i++)
+	{
+		sounds[i] = new Audio('media/glee'+i+'.ogg');
+		sounds[i].volume = 0.9;	
+	}
+	
+	backgroundSound = new Audio('media/music1.ogg');
+    backgroundSound.volume = 0.9;
+    backgroundSound.addEventListener('ended', function() { // зациклить воспроизведение фонового звука
+        this.currentTime = 0;
+        this.play();
+    }, false);
+    backgroundSound.play();
 	
 	candies_sprite = new Image();
 	candies_sprite.src = 'img_'+sprite_size+'/candy_sprite.png';
-	candies_sprite.onload = function() {}        
+	candies_sprite.onload = function() {}	
 	
 	eyes_sprite = new Image();
 	eyes_sprite.src = 'img_'+sprite_size+'/eyes_sprite.png';
-	eyes_sprite.onload = function() {}        
+	eyes_sprite.onload = function() {}	
 	
 	for(var i = 0; i < 8; i++)
 	{
 		border[i] = new Image();
-		border[i].src = 'img/border'+i+'.png';                
+		border[i].src = 'img/border'+i+'.png';
 	}
 	
 	TranslateX = (width - blockSize*circlesCount)/2;
 	TranslateY = (height - blockSize*circlesCount)/2;
 	ctx.translate(TranslateX,TranslateY);
+	menu = new Menu(fieldSize, fieldSize,levels.length);
+	menu.newGame = startGame;
 	
-	for (var i=0; i<(circlesCount); i++) {
-			circles[i] = [];
-		offsetX[i] = 0.0;
-		offsetY[i] = 0.0;
-		for(var j = 0; j < (circlesCount); j++) {
-			var color = level[i][j];
-			circles[i][j] = new Tile(blockSize,color,color,sprite_size);
-		}
-	}
-
-	RandomShift();
 	// привязываем событие нажатия мыши (для перетаскивания)
 	$('#scene').mousedown(function(e) {
 		var canvasPosition = $(this).offset();
+		
 		clickX = e.offsetX || 0;
 		clickY = e.offsetY || 0;
+
+		if (menu.enabled) {
+			menu.click(clickX-TranslateX, clickY-TranslateY);
+			return;
+		}
+		
 		if(!blocked)
 		{
 			var cX = Math.floor((clickX-TranslateX)/blockSize);
@@ -484,6 +569,7 @@ $(function(){
 				selectedCircleX = cX;
 				selectedCircleY = cY;
 				//console.log(selectedCircleX,selectedCircleY);
+				sounds[circles[selectedCircleX][selectedCircleY].color].play();
 			}
 		}
 		
@@ -492,6 +578,10 @@ $(function(){
     $('#scene').mousemove(function(e) { // привязываем событие движения мыши для перетаскивания выбранной окружности
             var mouseX = e.offsetX || 0;
             var mouseY = e.offsetY || 0;
+
+	if (menu.enabled) {
+		menu.move(mouseX-TranslateX, mouseY-TranslateY);
+	}
 	
         if (selectedCircleX != undefined && selectedCircleY != undefined) {
 			
@@ -545,24 +635,25 @@ $(function(){
 					selectedCircleY = undefined;
 					
 					var tween = new Kinetic.Tween({
-						node: offsetX[animationRow],
-						x: animateTo,
-						duration: 0.1,
-						onStep: function(i) {
+							node: offsetX[animationRow],
+							x: animateTo,
+							duration: 0.1,
+							onStep: function(i) {
 								offsetX[animationRow] = i;
-						},
-						onFinish: function() {
-							var n = Math.floor(animateTo / blockSize)%circlesCount;
-							
-							shiftRow(animationRow,n);
-							UpdateEyes();
-							offsetX[animationRow] = 0;
-							moving = 0;
-							//console.log(offsetX[animationRow]);
+							},
+							onFinish: function() {
+								var n = Math.floor(animateTo / blockSize)%circlesCount;
+								
+								shiftRow(animationRow,n);
+								UpdateEyes();
+								offsetX[animationRow] = 0;
+								moving = 0;
+								//console.log(offsetX[animationRow]);
 							}
 						});
 					tween.play();
-				}
+				
+				}			
 			}
 		}
 		if(moving == 2)
@@ -584,33 +675,34 @@ $(function(){
 					var animationRow = selectedCircleX;
 					selectedCircleX = undefined;
 					selectedCircleY = undefined;
-
+				
 					var tween = new Kinetic.Tween({
-						node: offsetY[animationRow],
-						x: animateTo,
-						duration: 0.1,
-						onStep: function(i) {
+							node: offsetY[animationRow],
+							x: animateTo,
+							duration: 0.1,
+							onStep: function(i) {
 								offsetY[animationRow] = i;
-						},
-						onFinish: function() {
-							var n = Math.floor(animateTo / blockSize)%circlesCount;
-							
-							shiftColl(animationRow,n);
-							UpdateEyes();
-							offsetY[animationRow] = 0;
-							moving = 0;
-							//console.log(offsetY[animationRow]);
-						}
-					});
+							},
+							onFinish: function() {
+								var n = Math.floor(animateTo / blockSize)%circlesCount;
+								
+								shiftColl(animationRow,n);
+								UpdateEyes();
+								offsetY[animationRow] = 0;
+								moving = 0;
+								//console.log(offsetY[animationRow]);
+							}
+						});
 					tween.play();
-			}
-	}
-}
+				}	
+			}		
+		}
 		if(moving == 0)
 		{
 			selectedCircleX = undefined;
-			selectedCircleY = undefined;			
+			selectedCircleY = undefined;		
 		}
+		
     });
 
     setInterval(drawScene, 30); // скорость отрисовки
