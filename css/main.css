@@ -1,27 +1,27 @@
-/* общие стили */
+ /*общие стили */
 *{
     margin:0;
     padding:0;
 }
 
 body {
-    background-color:#bababa;
+   /* background-color:#bababa;
     background-image: -webkit-radial-gradient(600px 300px, circle, #67eaf2, #2b767b 60%);
     background-image: -moz-radial-gradient(600px 300px, circle, #67eaf2, #2b767b 60%);
     background-image: -o-radial-gradient(600px 300px, circle, #67eaf2, #2b767b 60%);
-    background-image: radial-gradient(600px 300px, circle, #67eaf2, #2b767b 60%);
+    background-image: radial-gradient(600px 300px, circle, #67eaf2, #2b767b 60%);*/
 }
 
-.container {
-    width:100%;
-}
-
-.container > * {
-    display:block;
+#container {
+	position: relative;
 }
 
 /* стили урока */
-#scene {
-	position: relative;
+#container canvas {
+	position: absolute;
 
+}
+
+canvas {
+    background-color: transparent;
 }

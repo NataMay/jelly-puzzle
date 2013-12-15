@@ -5,14 +5,20 @@
         <title>Jelly-Puzzle</title>
 
         <link href="css/main.css" rel="stylesheet" type="text/css" />
+		<script type="text/javascript" src="js/vector.js"></script>
+		<script type="text/javascript" src="js/hint.js"></script>
+		<script type="text/javascript" src="js/bang.js"></script>
+		<script type="text/javascript" src="js/preload.js"></script>
 		<script type="text/javascript" src="js/kinetic.js"></script>
         <script type="text/javascript" src="js/jquery.js"></script>
+		<script type="text/javascript" src="js/button.js"></script>
 		<script type="text/javascript" src="js/menu.js"></script>
 		<script type="text/javascript" src="js/tile.js"></script>
         <script type="text/javascript" src="js/script.js"></script>
     </head>
     <body>
-        <div class="container">
+        <div id="container">
+			<canvas id="background"></canvas>
             <canvas id="scene"></canvas>
         </div>
 
