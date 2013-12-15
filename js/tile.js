@@ -61,5 +61,4 @@ function Tile(size,color,eye,sprite_size,locked){
 	this.CloseEyes = function() {
 		this.targetEye = 4;
 	}
-
 }
