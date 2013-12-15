@@ -376,25 +376,30 @@ var Kinetic = {};
             }
 
             // add to tween map
-            start = node;
-
-           /* if (Kinetic.Util._isArray(end)) {
-                end = Kinetic.Util._getPoints(end);
+            
+			
+            if(Object.prototype.toString.call(end) == '[object Array]') {
+           // if (Kinetic.Util._isArray(end)) {
+                //end = Kinetic.Util._getPoints(end);
                 diff = [];
+				start = [];
                 len = end.length;
                 for (n=0; n<len; n++) {
-                    startVal = start[n];
+					start[n] = {x:node[n].x,y:node[n].y};
+                    startVal = node[n];
                     endVal = end[n];
                     diff.push({
                         x: endVal.x - startVal.x,
                         y: endVal.y - startVal.y
                     });
                 }
+				//console.log(diff);
 
             }
-            else {*/
+            else {
+				start = node;
                 diff = end - start;
-            //}
+            }
 
             Kinetic.Tween.attrs[nodeId][this._id][key] = {
                 start: start,
@@ -411,8 +416,11 @@ var Kinetic = {};
                 attr = attrs[key];
                 start = attr.start;
                 diff = attr.diff;
+				
+				//console.log(start);
 
-                /*if (Kinetic.Util._isArray(start)) {
+				if(Object.prototype.toString.call(start) == '[object Array]') {
+                //if (Kinetic.Util._isArray(start)) {
                     newVal = [];
                     len = start.length;
                     for (n=0; n<len; n++) {
@@ -421,18 +429,18 @@ var Kinetic = {};
                         newVal.push({
                             x: startVal.x + (diffVal.x * i),
                             y: startVal.y + (diffVal.y * i)
-                        });
+                        });						
                     }
                 }
-                else {*/
+                else {
                     newVal = start + (diff * i);
 					//console.log(i);
-                //}
+                }
 
                // node.setAttr(key, newVal);
-			   node = newVal;
+			   //node = newVal;
                 if (this.onStep) {
-                    this.onStep(newVal);
+                    this.onStep(newVal,i);
 					//console.log(newVal);
                 }
 			   /////////////////////////////////////////////////////////// Вот тут походу надо присваивать новое значение переменной для ее анимации
@@ -879,6 +887,8 @@ var Kinetic = {};
         */
         'StrongEaseOut': function(t, b, c, d) {
             return c * (( t = t / d - 1) * t * t * t * t + 1) + b;
+			//console.log(t, b, c, d);
+			//Math.pow(2, 8 * (p - 1))
         },
         /**
         * strong ease in out

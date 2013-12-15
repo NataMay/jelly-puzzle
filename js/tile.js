@@ -12,23 +12,11 @@ function Tile(size,color,eye,sprite_size){
 	this.draw = function(ctx, transform,light) {
 		ctx.save();
 		ctx.setTransform(transform.m11, transform.m12, transform.m21, transform.m22, transform.dx, transform.dy);
-		//if(light != 0)
-		//	light = sprite_size;
-			//ctx.drawImage(Candies[color],this.border,this.border,this.size-this.border,this.size-this.border);
-		//else
 		
 		ctx.drawImage(candies_sprite,this.color*this.sprite_size,light*this.sprite_size,this.sprite_size,this.sprite_size,this.border,this.border,this.size-this.border,this.size-this.border);
-		//console.log(light);
 			
 		if(this.drawEyes === true)
 		{
-			
-			/*ctx.save();
-			console.log(size);
-			ctx.translate(0,(size-eyes[eye][this.currentEye].height)/2);
-			ctx.drawImage(eyes[eye][this.currentEye],0,0);
-			ctx.restore();*/
-			
 			ctx.save();
 			ctx.translate(0,size/4);
 			
@@ -46,7 +34,6 @@ function Tile(size,color,eye,sprite_size){
 					this.drawEyes = false;
 			}
 		}
-		
 		ctx.restore();
 	}
 	

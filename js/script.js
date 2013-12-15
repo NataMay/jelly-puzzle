@@ -1,4 +1,4 @@
-var canvas, ctx;
+var canvas, ctx, ctxBcg, canvasBcg;
 var circles = [];
 var selectedCircleX;
 var selectedCircleY;
@@ -14,7 +14,7 @@ var sprite_size = 48;
 var fieldSize = blockSize * circlesCount;
 var moving = 0; // 0-никуда 1-перемещение строки 2-перемещение столбца
 var TranslateX = 0;
-var TranslateX = 0;
+var TranslateY = 0;
 var dMove = 5;
 var Candies = [];
 var Candies_light = [];
@@ -27,8 +27,10 @@ var jump_stepY = -1;
 var cur_blockSizeX = 0.2;
 var cur_blockSizeY = blockSize;
 var currentLevel = 0;
+var levelHint = [[1,1,1,0],[1,0,1,0],[0,1,1,0],[1,0,0,0]];
 var levels = [
-    [0,[[1,1,1,1],[1,1,1,1],[0,0,0,0],[0,0,0,0]]],
+   	//[0,[[1,1,1,0],[1,0,1,1],[1,0,0,0],[0,1,0,0]]],
+	[0,[[1,1,1,1],[1,1,1,1],[0,0,0,0],[0,0,0,0]]],
     [1,[[2,2,2,2],[2,0,0,0],[2,0,0,0],[2,0,0,0]]],
     [2,[[1,1,1,1],[2,2,2,2],[1,1,1,1],[2,2,2,2]]],
     [3,[[0,0,0,0],[0,3,3,0],[0,3,3,0],[0,0,0,0]]],
@@ -42,7 +44,8 @@ var levels = [
     [11,[[2,0,0,0,0],[5,2,0,0,0],[5,5,2,0,0],[5,5,5,2,0],[5,5,5,5,2]]],
     [12,[[4,4,1,1,1],[4,4,4,6,6],[6,6,4,6,6],[6,6,4,4,4],[1,1,1,4,4]]],
     [13,[[2,2,5,2,2],[2,3,5,3,2],[2,3,3,3,2],[2,3,5,3,2],[2,2,5,2,2]]],
-    [14,[[1,0,1,0,1],[1,4,1,4,1],[4,4,4,4,4],[0,1,1,1,0],[1,0,1,0,1]]]
+	[14,[[2,2,5,3,2,2],[2,3,5,3,3,2],[2,3,3,3,3,2],[2,3,3,3,3,2],[2,3,5,3,3,2],[2,2,5,3,2,2]]]
+   // [14,[[1,0,1,0,1],[1,4,1,4,1],[4,4,4,4,4],[0,1,1,1,0],[1,0,1,0,1]]]
 ]
 var circlesCount=levels[currentLevel][1].length; //= 7; // мы нарисуем n окружностей
 var fieldSize = blockSize * circlesCount;
@@ -57,9 +60,19 @@ var CountShift=20;
 var circlesOpenEyes = [];
 var sounds = [];
 var backgroundSound;
+var soundCelebrate;
 var menu;
-// -------------------------------------------------------------
+var sources;
+var btnBackMenu_Main;
+var btnPause_Menu;
+var enableMusic=true;
+var enableSFX=true;
+var bang;
+var win = 0;
+var id;
 
+
+// -------------------------------------------------------------
 function draw(func, transform){
 
 	ctx.save();
@@ -72,11 +85,57 @@ function draw(func, transform){
 
 // функции отрисовки :
 
-function clear() { // функция очищает canvas
+function clear(x,y,w,h) { // функция очищает canvas
 	ctx.save();
-	ctx.translate(0,0);
-    ctx.clearRect(-10, -10, fieldSize+20, fieldSize+20);
+	//ctx.translate(0,0);
+	//ctx.clearRect(-10, -10, fieldSize+20, fieldSize+20);
+	ctx.setTransform(1, 0, 0, 1, 0, 0);
+	// Will always clear the right space
+	//console.log(x,y,width,height);
+	
+	if(x)
+		ctx.clearRect(x, y, w, h);
+	else
+		ctx.clearRect(0, 0, width, height);
 	ctx.restore();
+}
+
+function clearBackground() {
+	ctxBcg.save();
+	//ctx.translate(0,0);
+	//ctx.clearRect(-10, -10, fieldSize+20, fieldSize+20);
+	ctxBcg.setTransform(1, 0, 0, 1, 0, 0);
+	// Will always clear the right space
+	//console.log(x,y,width,height);
+	ctxBcg.fillRect(0, 0, width, height);
+	ctxBcg.restore();
+}
+
+function WinGame() {
+		if (currentLevel+1==levels.length){
+			alert('Game completed');
+			menu.page='main';
+			menu.enabled=true;
+		}else{
+			ctxBcg.drawImage(canvas,0,0);
+			menu.page = 'win';
+			CountShift=20;
+			clear(); // очистить canvas
+
+			bang = new Bang({
+				x: width/2,
+				y: height/2,
+				count: 30,
+				radius: (height/2) >> 0,
+				duration: 3
+			});
+			bang.play();
+			menu.enabled=true;	
+			if(menu.enableSFX){
+				soundCelebrate.play();
+			}
+		}
+
 }
 
 function drawFantom(ctx,color,eye,light) { // функция рисует окружность
@@ -106,12 +165,14 @@ function drawFantom(ctx,color,eye,light) { // функция рисует окружность
 }
 
 function UpdateEyes() {
+	win=6;
 	circlesOpenEyes = [];
 	for (var i = 0; i < circlesCount; i++) {
 		for (var j = 0; j < circlesCount; j++) {
 			if (circles[i][j].color != levels[currentLevel][1][i][j]) {
-					circlesOpenEyes.push(circles[i][j]);
-					circles[i][j].OpenEyes();
+				circlesOpenEyes.push(circles[i][j]);
+				circles[i][j].OpenEyes();
+				win=0;
 			}
 			else
 			circles[i][j].CloseEyes();
@@ -133,7 +194,7 @@ function processEyes() {
 	}
 }
 
-function shiftRow(k,n) {
+function shiftRow(k,n) {   // сдвиг строки
 	var b = [];
 	
 	if(n != 0)
@@ -203,97 +264,85 @@ function shiftColl(k,n) {
 	blocked = false;
 }
 
-function drawField() {
-	ctx.drawImage(border[0],-blockSize/2,-blockSize/2,blockSize,blockSize);
-	ctx.drawImage(border[3],-blockSize/2,blockSize*(circlesCount-1) + blockSize/2,blockSize,blockSize);
-	ctx.drawImage(border[1],blockSize*(circlesCount-1)+blockSize/2,-blockSize/2,blockSize,blockSize);
-	ctx.drawImage(border[2],blockSize*(circlesCount-1) + blockSize/2,blockSize*(circlesCount-1) + blockSize/2,blockSize,blockSize);
-	for (var i=0; i<circlesCount-1; i++) {
-		ctx.drawImage(border[5],-blockSize/2,blockSize*i + blockSize/2,blockSize,blockSize);
-		ctx.drawImage(border[7],blockSize*(circlesCount-1) + blockSize/2,blockSize*i + blockSize/2,blockSize,blockSize);
-		ctx.drawImage(border[6],blockSize*i + blockSize/2,-blockSize/2,blockSize,blockSize);
-		ctx.drawImage(border[4],blockSize*i + blockSize/2,blockSize*(circlesCount-1) + blockSize/2,blockSize,blockSize);
-	}
+function drawField(context) {
+	context.save();
+		context.fillStyle = 'rgba(51,53,52,255)';
+		context.fillRect(0, 0, blockSize*circlesCount, blockSize*circlesCount);
+	context.restore();
 }
 
-function drawLevel()//отобразить мини уровень
+function drawBorder(context) {
+	var halfblock = (blockSize/2) >> 0;
+	var imageSize = border[0].width;	
+	
+	
+	context.drawImage(border[0],-halfblock,-halfblock,blockSize,blockSize);
+	//ctx.drawImage(border[0],-imageSize,-imageSize);
+	context.drawImage(border[3],-halfblock,blockSize*(circlesCount-1) + halfblock,blockSize,blockSize);
+	context.drawImage(border[1],blockSize*(circlesCount-1) + halfblock,-halfblock,blockSize,blockSize);
+	context.drawImage(border[2],blockSize*(circlesCount-1) + halfblock,blockSize*(circlesCount-1) + halfblock,blockSize,blockSize);
+	context.drawImage(border[5],0,0,imageSize,imageSize, -halfblock, halfblock, blockSize, (circlesCount-1)*blockSize);
+	context.drawImage(border[7],0,0,imageSize,imageSize, blockSize*(circlesCount-1) + halfblock,halfblock,blockSize,(circlesCount-1)*blockSize);
+	context.drawImage(border[6],0,0,imageSize,imageSize, halfblock,-halfblock,(circlesCount-1)*blockSize,blockSize);
+	context.drawImage(border[4],0,0,imageSize,imageSize, halfblock,blockSize*(circlesCount-1) + halfblock,(circlesCount-1)*blockSize,blockSize);
+}
+
+function drawLevel(context, translateX, translateY, scaleRect)//отобразить мини уровень
 {
 	var border = Math.ceil((blockSize*0.04)/2);		
-	ctx.save();
-	ctx.translate(-circlesCount*blockSize*0.3-50, 0);//-circlesCount*blockSize*0.3);
+	context.save();
+	
+	context.translate(translateX, translateY);//-circlesCount*blockSize*0.3);
     for (var i=0; i<circlesCount; i++) { // отобразить все окружности
 		for(var j = 0; j < circlesCount; j++) {
-			ctx.save();
-			ctx.translate(j*blockSize*0.301,i*blockSize*0.301);
-			ctx.drawImage(candies_sprite,
+			context.save();
+			context.translate(j*scaleRect,i*scaleRect);
+			context.drawImage(candies_sprite,
 				levels[currentLevel][1][i][j]*sprite_size,
 				0,
 				sprite_size,sprite_size,
 				border,border,
-				blockSize*0.3,
-				blockSize*0.3);
-			ctx.restore();
+				scaleRect,
+				scaleRect);
+			context.restore();
 		}
 	}
-	ctx.restore();
+	context.restore();
+	//console.log(circlesCount, currentLevel,(blockSize*0.04)/2, -circlesCount*blockSize*0.3-50, 1*blockSize*0.301, 1*blockSize*0.301);
 }
-	
-function drawScene() { // главная функция отрисовки
-    clear(); // очистить canvas
-	
-	if (menu.enabled) {
-		menu.draw(ctx);
-		return;
-	}
 
-	var loopX = 0;
-	var loopY = 0;
-	var light = 0;
 	
-	ctx.beginPath();
-	ctx.rect(blockSize/2, blockSize/2, blockSize*(circlesCount-1) + 1, blockSize*(circlesCount-1) + 1);
-	ctx.fillStyle = 'rgba(51,53,52,255)';
-	ctx.fill();
-	ctx.closePath();
-	
-	drawField();
-
-	if (cur_blockSizeX + jump_stepX > 0.2 || cur_blockSizeX + jump_stepX < -0.2)
-		jump_stepX = -jump_stepX;
-	cur_blockSizeX += jump_stepX;
-
-	processEyes();
-	
+function drawScene() { // главная функция отрисовки	
 	var transformBlock = {m11:1,
 	m12:0,
 	m21:(animate ? cur_blockSizeX : 0),
 	m22:1,
 	dx:0,
 	dy:0};
+	if (menu.enabled) {
+		if(menu.page =='win' && bang.isPlaying()) {
+			menu.draw(ctx);
+		}
+		return;
+	}
+	//console.log(1);
+
+	var loopX = 0;
+	var loopY = 0;
+	var light = 0;
 	
-	
-	var transformBlock2 = {m11:0.3,
-	m12:0,
-	m21:(animate ? cur_blockSizeX : 0),
-	m22:0.3,
-	dx:0,
-	dy:0};
-	
+	drawField(ctx);
+
+	if (cur_blockSizeX + jump_stepX > 0.2 || cur_blockSizeX + jump_stepX < -0.2)
+		jump_stepX = -jump_stepX;
+	cur_blockSizeX += jump_stepX;
+
+	processEyes();
+
 	ctx.save();
 	ctx.beginPath();
 	ctx.rect(0, 0, blockSize*circlesCount, blockSize*circlesCount);
 	ctx.clip();
-	
-	for (var i=0; i<circlesCount; i++) { // отобразить мини уровень
-		for(var j = 0; j < circlesCount; j++) {
-		
-		transformBlock2.dx = j*blockSize/3;
-		transformBlock2.dy = i*blockSize/3;
-		draw(function(ctx){
-		drawFantom(ctx, levels[currentLevel][1][i][j],0,0);
-		},transformBlock2);			
-		}	
-	}
 	
     for (var i=0; i<circlesCount; i++) { // отобразить все окружности
 	
@@ -374,11 +423,16 @@ function drawScene() { // главная функция отрисовки
 		}
     }
 	ctx.restore();
-	drawLevel();
+	if(win > 0) {
+		win--;
+		if(win == 0)
+			WinGame();
+	}
 }
 
 // -------------------------Перемешивание уровня----------------------
 function RandomShift(){
+	blocked=true;
 	var napravl=Math.floor(Math.random() * 2);
 	do var kol=Math.floor(Math.random() * ((circlesCount-1) - (-(circlesCount-1)) + 1)) - (circlesCount-1);
 	while(kol==0);
@@ -440,6 +494,7 @@ function startGame(levelNum) {
 	currentLevel = levelNum;
 	circlesCount=levels[currentLevel][1].length; //= 7; // мы нарисуем n окружностей
 	fieldSize = blockSize * circlesCount;
+	clear();
 	blockSize = Math.floor((height - height*0.1)/circlesCount);
 	
 	var avaliable_sizes = [48,64,128,256];
@@ -476,16 +531,35 @@ function startGame(levelNum) {
 		}
 	}
 	blocked = true;
+	drawLevel(ctx, -circlesCount*blockSize*0.3-50, 0, blockSize*0.301);
+	drawBorder(ctx);
 	RandomShift();
+
+	btnPause_Menu.draw();
+	
 }
 
 // инициализация
 $(function(){
     canvas = document.getElementById('scene');
     ctx = canvas.getContext('2d');
-	width = canvas.width = $(window).width();
-	height = canvas.height = $(window).height();
+	canvasBcg = document.getElementById('background');
+    ctxBcg = canvasBcg.getContext('2d');
+	width = document.body.clientWidth;
+	height = document.body.clientHeight;
+
+	canvas.width = width;
+	canvasBcg.width = width;
 	
+	canvas.height = height;
+	canvasBcg.height = height;
+
+	var grd = ctxBcg.createRadialGradient(width/2, height/2, 10, width/2, height/2, height);
+	grd.addColorStop(0, '#02f1fb');
+	grd.addColorStop(1, '#0a53c8');
+	ctxBcg.fillStyle = grd;
+	ctxBcg.fillRect(0, 0, width, height);	
+		
 	blockSize = Math.floor((height - height*0.1)/circlesCount);
 	
 	var avaliable_sizes = [48,64,128,256];
@@ -512,9 +586,9 @@ $(function(){
 			sprite_size = avaliable_sizes[avaliable_sizes.length - 1];
 	}
 	fieldSize = blockSize * circlesCount;
-		
+	
 	// Звуки
-	for(var i = 0; i < 11; i++)
+	for(var i = 0; i < 10; i++)
 	{
 		sounds[i] = new Audio('media/glee'+i+'.ogg');
 		sounds[i].volume = 0.9;	
@@ -528,13 +602,9 @@ $(function(){
     }, false);
     backgroundSound.play();
 	
-	candies_sprite = new Image();
-	candies_sprite.src = 'img_'+sprite_size+'/candy_sprite.png';
-	candies_sprite.onload = function() {}	
+	soundCelebrate = new Audio('media/celebrate.wav');
+    soundCelebrate.volume = 0.9;
 	
-	eyes_sprite = new Image();
-	eyes_sprite.src = 'img_'+sprite_size+'/eyes_sprite.png';
-	eyes_sprite.onload = function() {}	
 	
 	for(var i = 0; i < 8; i++)
 	{
@@ -545,21 +615,108 @@ $(function(){
 	TranslateX = (width - blockSize*circlesCount)/2;
 	TranslateY = (height - blockSize*circlesCount)/2;
 	ctx.translate(TranslateX,TranslateY);
-	menu = new Menu(fieldSize, fieldSize, width, height, levels.length);
-	menu.newGame = startGame;
+
+    sources = {
+        candy_sprite: 'img_'+sprite_size+'/candy_sprite.png',
+        eyes_sprite: 'img_'+sprite_size+'/eyes_sprite.png',
+		logo: 'menu/Jelly.png',
+		eyes: 'menu/eyes.png',
+		winner: 'menu/win.png',
+		shadow: 'menu/shadow.png',
+		btnNewGame: 'menu/start.png',
+		btnNewGameLight: 'menu/start_light.png',
+		btnExitGame: 'menu/exit.png',
+		btnExitGameLight: 'menu/exit.png',
+		btnSettings: 'menu/settings.png',
+		btnSettingsLight: 'menu/settings.png',
+		btnBackMenu: 'menu/back.png',
+		btnMusic: 'menu/music.png',
+		btnMusic_Off: 'menu/music_off.png',
+		btnSFX: 'menu/sfx.png',
+		btnSFX_Off: 'menu/sfx_off.png',
+		btnToLevels: 'menu/to_levels.png',
+		btnNextLevel: 'menu/next_level.png',
+		btnPauseMenu: 'menu/pause.png',
+		btnLevelBlocked: 'menu/level_block.png',
+		btnResume: 'menu/resume.png',
+		btnRestart: 'menu/restart.png',
+		btnsLevel: 'menu/level1.png',
+		btnHint: 'menu/hint.png',
+		hint1: 'menu/hint1.png',
+		hint2: 'menu/hint2.png',
+		hint3: 'menu/hint3.png',
+		btnNext: 'menu/next.png',
+		btnPrevious: 'menu/previous.png',
+		numbers: 'menu/numbers.png'
+      };
+		
+	loadImages(sources, function(images) {
+		menu = new Menu(ctx, width, height,levels.length,images);
+		menu.newGame = startGame;
+		candies_sprite = images.candy_sprite;
+		eyes_sprite = images.eyes_sprite;
+		menu.draw();
+		//setInterval(drawScene, 30);	
+	
+	btnPause_Menu = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnPauseMenu,
+				light	: images.btnPauseMenu },
+	x		: width - height/4,
+	y		: 0,
+	width	: height/4,
+	height	: height/4
+	});	
+	
 	
 	// привязываем событие нажатия мыши (для перетаскивания)
-	$('#scene').mousedown(function(e) {
+	//$('#scene').mousedown(function(e) {
+	var mousedownf=function (e){
+	//menu.draw(ctx);
 		var canvasPosition = $(this).offset();
-		
-		clickX = e.offsetX || 0;
-		clickY = e.offsetY || 0;
-
+		if (e.offsetX){
+			clickX = e.offsetX || 0;
+			clickY = e.offsetY || 0;
+		}else{
+			clickX = e.touches[0].pageX || 0;
+			clickY = e.touches[0].pageY || 0;
+		}
 		if (menu.enabled) {
-			menu.click(clickX-TranslateX, clickY-TranslateY);
+			menu.click(clickX, clickY);
 			return;
 		}
 		
+		/*if (btnBackMenu_Main.checkMouse(clickX, clickY)) {
+			menu.page = 'levels';
+			clear();
+			menu.enabled=true;
+			CountShift=20;
+			menu.draw();
+			if(enableSound){
+				enableSound=false;
+				backgroundSound.pause();
+			}else{
+				enableSound=true;
+				backgroundSound.play();
+			}
+		}*/
+
+		if (btnPause_Menu.checkMouse(clickX, clickY)) {
+			menu.page = 'pause';
+			menu.enabled=true;
+			CountShift=20;
+			clear(btnPause_Menu.x,btnPause_Menu.y,btnPause_Menu.width,btnPause_Menu.height);
+			menu.draw();
+			
+			/*if(enableSound){
+				enableSound=false;
+				backgroundSound.pause();
+			}else{
+				enableSound=true;
+				backgroundSound.play();
+			}*/
+		}
+
 		if(!blocked)
 		{
 			var cX = Math.floor((clickX-TranslateX)/blockSize);
@@ -569,20 +726,40 @@ $(function(){
 				selectedCircleX = cX;
 				selectedCircleY = cY;
 				//console.log(selectedCircleX,selectedCircleY);
-				sounds[circles[selectedCircleX][selectedCircleY].color].play();
+				if(menu.enableSFX){
+					sounds[circles[selectedCircleX][selectedCircleY].color].play();
+				}
 			}
 		}
-		
-    });
+    }//);
 
-    $('#scene').mousemove(function(e) { // привязываем событие движения мыши для перетаскивания выбранной окружности
-            var mouseX = e.offsetX || 0;
-            var mouseY = e.offsetY || 0;
-
-	if (menu.enabled) {
-		menu.move(mouseX-TranslateX, mouseY-TranslateY);
+	var support=0;
+	try {
+		document.createEvent('TouchEvent');
+		support=1;
+	} catch (e) {
+		support=0;
 	}
+	if(support==1) canvas.addEventListener('touchstart',mousedownf);
+	else canvas.addEventListener('mousedown',mousedownf);
+	support=0;
 	
+    //$('#scene').mousemove(function(e) { // привязываем событие движения мыши для перетаскивания выбранной окружности
+	var mousemovef=function (e){
+		var mouseX;
+		var mouseY;
+		if (e.offsetX){
+			mouseX = e.offsetX || 0;
+			mouseY = e.offsetY || 0;
+		}else{
+			mouseX = e.touches[0].pageX || 0;
+			mouseY = e.touches[0].pageY || 0;
+		}
+
+		if (menu.enabled) {
+			menu.move(mouseX, mouseY);
+		}
+		
         if (selectedCircleX != undefined && selectedCircleY != undefined) {
 			
             var canvasPosition = $(this).offset();
@@ -609,9 +786,20 @@ $(function(){
 				offsetY[selectedCircleX] = 0;
 			}
         }
-	});
+	}//);
+	
+	try {
+		document.createEvent('TouchEvent');
+		support=1;
+	} catch (e) {
+		support=0;
+	}
+	if(support==1) canvas.addEventListener('touchmove',mousemovef);
+	else canvas.addEventListener('mousemove',mousemovef);
+	support=0;
 
-    $('#scene').mouseup(function(e) { // событие mouseup - очистка выбранной окружности
+    //$('#scene').mouseup(function(e) { // событие mouseup - очистка выбранной окружности
+	var mouseupf=function (e){
 		var loop = 0;
 
 		if(moving == 1)
@@ -703,7 +891,16 @@ $(function(){
 			selectedCircleY = undefined;		
 		}
 		
-    });
+    }//);
+	try {
+		document.createEvent('TouchEvent');
+		support=1;
+	} catch (e) {
+		support=0;
+	}
+	if(support==1) canvas.addEventListener('touchend',mouseupf);
+	else canvas.addEventListener('mouseup',mouseupf);
 
-    setInterval(drawScene, 30); // скорость отрисовки
+	id=setInterval(drawScene, 30);	// скорость отрисовки
+	});
 });

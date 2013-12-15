@@ -1,285 +1,586 @@
-function Menu(width, height, realWidth, realHeight, CountLevel) {
+function Menu(ctx,width, height,CountLevel, images) {
 	
 	this.height = height;
 	this.width = width;
 	this.enabled = true;
 	//this.resume = true;
 	this.CountLevel = CountLevel;
-	
-	var page = 'main';
+	var ctx = ctx;
+	this.page = 'main';
+	this.enableSFX=true;
+	this.enableMusic=true;
 	
 	this.newGame = function(levelNum) {};
 	this.exitGame = function() {};
+	var	hint;
+		this.page_hint=0;
+	var N_level=0;
+
+	var hint1 = images.hint1;
+	var hint2 = images.hint2;
+	var hint3 = images.hint3;
+	var logo = images.logo;
+	var winner = images.winner;
+	var eyes = images.eyes;
+	var shadow = images.shadow;
+	var numbers = images.numbers;
+	var widthText = this.width-this.height/2;
+	var heightText = this.height/4;
+	var k = widthText/heightText;
 	
-	var scale = 1;
-	if (realWidth < 500 || realHeight < 550) {
-		var scaleX = realWidth / 500;
-		var scaleY = realHeight / 550;
-		if (scaleX < scaleY) {
-			scale = scaleX;
-		} else {
-			scale = scaleY;
-		}
-	}
 	
-	var logoWidth, logoHeight, logoX, logoY = 30 * scale;
-	var logo = new Image();
-	logo.src = 'menu/Jelly.png';
-	logo.onload = function() {
-		logoWidth = logo.width * scale;
-		logoHeight = logo.height * scale;
-		logoX = (width - logoWidth) / 2;
-	}
+	var btnNewGame = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnNewGame,
+				light	: images.btnNewGameLight },
+	x		: (this.width - this.height * 0.3) / 2,
+	y		: (this.height - this.height * 0.3) / 2,
+	width	: this.height * 0.3,
+	height	: this.height * 0.3
+	});
 	
-	var eyesWidth, eyesHeight, eyesX, eyesY = 322 * scale;
-	var eyes = new Image();
-	eyes.src = 'menu/eyes2.png';
-	eyes.onload = function() {
-		eyesWidth = eyes.width / 5 * scale;
-		eyesHeight = eyes.height * scale;
-		eyesX = (width - eyesWidth) / 2;
-	}
+	var btnSettings = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnSettings,
+				light	: images.btnSettings },
+	x		: 0.1,
+	y		: this.height-this.height/4,
+	width	: this.height/4,
+	height	: this.height/4
+	});
 	
-	var currentEye = 0;
-	var targetEye = 0;
+	var btnHint = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnHint,
+				light	: images.btnHint },
+	x		: this.width/2-this.height/8,
+	y		: this.height/2,
+	width	: this.height/4,
+	height	: this.height/4
+	});
 	
-	var textWidth, textHeight, textX, textY = 284 * scale;
-	var text = new Image();
-	text.src = 'menu/help.png';
-	text.onload = function() {
-		textWidth = text.width / 5.2 * scale;
-		textHeight = text.height / 5.2 * scale;
-		textX = (width - textWidth) / 2 - 170 * scale;
-	}
+	var btnExitGame = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnExitGame,
+				light	: images.btnExitGame },
+	x		: this.width - this.height/4,
+	y		: this.height-this.height/4,
+	width	: this.height/4,
+	height	: this.height/4
+	});
+
+	var btnBackMenu = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnBackMenu,
+				light	: images.btnBackMenu },
+	x		: this.width/2 - this.height/8,
+	y		: this.height - this.height/4,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
 	
-	var shadowWidth, shadowHeight, shadowX, shadowY = 290 * scale;
-	var shadow = new Image();
-	shadow.src = 'menu/shadow.png';
-	shadow.onload = function() {
-		shadowWidth = shadow.width * scale;
-		shadowHeight = shadow.height * scale;
-		shadowX = (width - shadowWidth) / 2;
-	}
+	var btnMusic = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnMusic,
+				light	: images.btnMusic_Off },
+	x		: this.width/2 - this.height/4,
+	y		: this.height/2 - this.height/3.5,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
 	
-	var btnNewGameWidth, btnNewGameHeight, btnNewGameX, btnNewGameY = 290 * scale;
-	var btnNewGame = new Image();
-	btnNewGame.src = 'menu/start.png';
-	btnNewGame.onload = function() {
-		btnNewGameWidth = btnNewGame.width * scale;
-		btnNewGameHeight = btnNewGame.height * scale;
-		btnNewGameX = (width - btnNewGameWidth) / 2;
-	}
-	var btnNewGameLight = new Image();
-	btnNewGameLight.src = 'menu/start_light.png';
-	btnNewGameLight.onload = function() {}
+	var btnSFX = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnSFX,
+				light	: images.btnSFX_Off },
+	x		: this.width/2,
+	y		: this.height/2 - this.height/3.5,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
+
+	var btnToLevels = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnToLevels,
+				light	: images.btnToLevels },
+	x		: this.width/2 - this.height/8-this.height/4,
+	y		: this.height - this.height/2,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
+	
+	var btnRestart = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnRestart,
+				light	: images.btnRestart },
+	x		: this.width/2-this.height/8,
+	y		: this.height - this.height/2,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
+	
+	var btnResume = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnResume,
+				light	: images.btnResume },
+	x		: this.width/2 + this.height/8,
+	y		: this.height - this.height/2,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
+	
+	var btnNextLevel = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnNextLevel,
+				light	: images.btnNextLevel },
+	x		: this.width/2 + this.height/8,
+	y		: this.height - this.height/2,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
+	
+	var btnNext = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnNext,
+				light	: images.btnNext },
+	x		: this.width - this.height/4,
+	y		: this.height - this.height/4,
+	width	: this.height/4,
+	height	: this.height/4
+	});
+	
+	var btnPrevious = new Button({
+	ctx		: ctx,
+	images	: { normal	: images.btnPrevious,
+				light	: images.btnPrevious },
+	x		: 0.1,
+	y		: this.height - this.height/4,
+	width	: this.height/4,
+	height	: this.height/4
+	});	
+	
 	var isNewGameSelect = false;
-	
-	var jumpY = 0;
-	var jumpSpeed = 0;
-	var jumpAcc = 1 * scale;
-	var isJump = true;
-	
-	//var btnResumeGame = new Image();
-	//btnResumeGame.src = 'img/resume_game.png';
-	//btnResumeGame.onload = function() {}
-	
-	var btnExitGameWidth, btnExitGameHeight, btnExitGameX, btnExitGameY = 455 * scale;
-	var btnExitGame = new Image();
-	btnExitGame.src = 'menu/exit.png';
-	btnExitGame.onload = function() {
-		btnExitGameWidth = btnExitGame.width * scale;
-		btnExitGameHeight = btnExitGame.height * scale;
-		btnExitGameX = (width - btnExitGameWidth) / 2 + 100 * scale;
-	}
-	var btnExitGameLight = new Image();
-	btnExitGameLight.src = 'menu/exit.png';
-	btnExitGameLight.onload = function() {}
 	var isExitGameSelect = false;
-	
-	var btnSettingsWidth, btnSettingsHeight, btnSettingsX, btnSettingsY = 455 * scale;
-	var btnSettings = new Image();
-	btnSettings.src = 'menu/settings.png';
-	btnSettings.onload = function() {
-		btnSettingsWidth = btnSettings.width * scale;
-		btnSettingsHeight = btnSettings.height * scale;
-		btnSettingsX = (width - btnSettingsWidth) / 2 - 100 * scale;
-	}
-	var btnSettingsLight = new Image();
-	btnSettingsLight.src = 'menu/settings.png';
-	btnSettingsLight.onload = function() {}
 	var isSettingsSelect = false;
-	
-	var btnBackMenu = new Image();
-	btnBackMenu.src = 'menu/back.png';
-	btnBackMenu.onload = function() {}
 	var isBackMenuSelect = false;
-	
-	var btnLevelBlocked = new Image();
-	btnLevelBlocked.src = 'menu/level_block.png';
-	btnLevelBlocked.onload = function() {}
 	
 	var btnsLevel = [];
 	var isLevelSelect = [];
 	var isLevelBlocked = [];
 	for (var i = 0; i < this.CountLevel; i++) {
-		btnsLevel[i] = new Image();
-		btnsLevel[i].src = 'menu/level1.png';
-		btnsLevel[i].onload = function() {}
-		isLevelSelect[i] = false;
+		var x = i % 5;
+		var y = Math.floor(i / 5);	
+		btnsLevel[i] = new Button({
+		index	: i+1,
+		ctx		: ctx,
+		images	: { normal	: images.btnsLevel,
+					light	: images.btnsLevel },
+		x		: this.width/5*x + (this.width/5 - (this.height/4 - 10))/2,
+		y		: this.height/4*y + 5,
+		width	: this.height/4 - 10,
+		height	: this.height/4 - 10,
+		onDraw	: function() {
+			if(this.index < 10) {
+				ctx.drawImage(numbers, this.index*256, 0, 256, numbers.height,this.width*0.25,this.height*0.25,this.width/2,this.height/2);
+			} else {
+				var n = this.index%10;
+				ctx.drawImage(numbers, n*256, 0, 256, numbers.height,this.width*0.41,this.height*0.25,this.width/2,this.height/2);
+				n = (this.index/10) >> 0;
+				ctx.drawImage(numbers, n*256, 0, 256, numbers.height,this.width*0.1,this.height*0.25,this.width/2,this.height/2);
+			}
+		}
+		});	
+	}
+
+	for (var i = 0; i < this.CountLevel; i++) {
 		isLevelBlocked[i] = false;
 	}
 	
-	this.draw = function(ctx) {
-		if (page == 'main') {
-			ctx.drawImage(logo, logoX, logoY, logoWidth, logoHeight);
-			
-			ctx.drawImage(text, textX, textY, textWidth, textHeight);
-			
-			ctx.drawImage(shadow, shadowX, shadowY, shadowWidth, shadowHeight);
-			if (isNewGameSelect) {
-				ctx.drawImage(btnNewGameLight, btnNewGameX, btnNewGameY-jumpY, btnNewGameWidth, btnNewGameHeight);
-			} else {
-				ctx.drawImage(btnNewGame, btnNewGameX, btnNewGameY-jumpY, btnNewGameWidth, btnNewGameHeight);
-			}
-			ctx.drawImage(eyes, currentEye*eyes.width/5, 0, eyes.width/5, eyes.height, eyesX, eyesY-jumpY, eyesWidth, eyesHeight);
-			
-			if (currentEye < targetEye) {
-				currentEye++;
-			} else if (currentEye > targetEye) {
-				currentEye--;
-			} else if (currentEye == 4) {
-				targetEye = 0;
-			} else if (currentEye == 0 && Math.random() < 0.02) {
-				targetEye = 4;
-			}
-			
-			if (isJump) {
-				jumpY += jumpSpeed;
-				jumpSpeed -= jumpAcc;
-				if (jumpY < 0) {
-					isJump = false;
+	this.draw = function() {
+		ctx.save();
+		ctx.setTransform(1, 0, 0, 1, 0, 0);
+		switch(this.page) {
+		case 'main':
+			ctx.drawImage(logo, (this.width - logo.width) / 2, 30);
+			ctx.drawImage(shadow, (this.width - shadow.width) / 2, 290);
+			/*var tween = new Kinetic.Tween({
+				node: 0,
+				x: btnNewGame.y,
+				duration: 0.5,
+				onStep: function(i) {
+					clear(btnNewGame.x-2,btnNewGame.y-2,btnNewGame.width+4,btnNewGame.height+4);
+					btnNewGame.y = i;
+					btnNewGame.draw();
+					//console.log(i);
 				}
-			} else {
-				if (Math.random() < 0.5) {
-					isJump = true;
-					jumpSpeed = (Math.random() * 5 + 2) * scale;
-				}
-			}
+			});
+			tween.play();*/
+			btnNewGame.draw(function() {ctx.drawImage(eyes, (btnNewGame.width - eyes.width) / 2, (btnNewGame.height - eyes.height) / 2)});
 			
-			if (isSettingsSelect) {
-				ctx.drawImage(btnSettingsLight, btnSettingsX, btnSettingsY, btnSettingsWidth, btnSettingsHeight);
-			} else {
-				ctx.drawImage(btnSettings, btnSettingsX, btnSettingsY, btnSettingsWidth, btnSettingsHeight);
+			btnSettings.draw();
+			btnExitGame.draw();
+
+		break;
+		case 'settings':
+			//ctx.drawImage(btnBackMenu, (this.width - btnBackMenu.width) / 2, 290);
+			btnMusic.draw();
+			btnSFX.draw();
+			btnBackMenu.draw();
+			btnHint.draw();
+		break;
+		
+		case 'hints':
+			//clear();
+			clear(btnExitGame.x,btnExitGame.y,btnExitGame.width,btnExitGame.height);
+			clear(btnNext.x,btnNext.y,btnNext.width,btnNext.height);
+			
+			btnExitGame.SetPos(width - height/4, 0, height/4, height/4);
+			btnExitGame.draw();
+			if(this.page_hint<2){
+				btnNext.draw();
 			}
-			if (isExitGameSelect) {
-				ctx.drawImage(btnExitGameLight, btnExitGameX, btnExitGameY, btnExitGameWidth, btnExitGameHeight);
-			} else {
-				ctx.drawImage(btnExitGame, btnExitGameX, btnExitGameY, btnExitGameWidth, btnExitGameHeight);
+			clear(btnPrevious.x,btnPrevious.y,btnPrevious.width,btnPrevious.height);
+			if(this.page_hint>0){
+				
+				btnPrevious.draw();
 			}
-		} else if (page == 'settings') {
-			if (isBackMenuSelect) {
-				ctx.drawImage(btnBackMenu, (this.width - btnBackMenu.width) / 2, 290);
-			} else {
-				ctx.drawImage(btnBackMenu, (this.width - btnBackMenu.width) / 2, 290);
+			var kImg=hint1.width/hint1.height;
+			var widthImg;
+			var heightImg;
+			if(k > kImg){
+				widthImg = heightText*kImg;
+				heightImg = heightText;
+				console.log(k, kImg, widthImg, heightImg, widthText, heightText);
 			}
-		} else if (page == 'levels') {
+			else
+			{
+				widthImg = widthText;
+				heightImg = widthText/kImg;
+			}
+			clear((width-widthImg)/2, height - heightImg, widthImg, heightImg);
+			if(this.page_hint==0){
+				ctx.drawImage(hint1, (width-widthImg)/2, height - heightImg, widthImg, heightImg);
+			}
+			if(this.page_hint==1){
+				ctx.drawImage(hint2, (width-widthImg)/2, height - heightImg, widthImg, heightImg);
+			}
+			if(this.page_hint==2){
+				ctx.drawImage(hint3, (width-widthImg)/2, height - heightImg, widthImg, heightImg);
+			}
+		break;
+		
+		case 'levels':
 			for (var i = 0; i < this.CountLevel; i++) {
-				var x = i % 3 - 1;
-				var y = Math.floor(i / 3) - 1;
-				if (isLevelBlocked[i]) {
-					ctx.drawImage(btnLevelBlocked, (this.width - btnsLevel[i].width) / 2 + x * 100, 200 + y * 100);
-				} else {
-					if (isLevelSelect[i]) {
-						ctx.drawImage(btnsLevel[i], (this.width - btnsLevel[i].width) / 2 + x * 100, 200 + y * 100);
-					} else {
-						ctx.drawImage(btnsLevel[i], (this.width - btnsLevel[i].width) / 2 + x * 100, 200 + y * 100);
-					}
-				}
+				btnsLevel[i].draw();
 			}
-			if (isBackMenuSelect) {
-				ctx.drawImage(btnBackMenu, (this.width - btnBackMenu.width) / 2 - 200, 500);
-			} else {
-				ctx.drawImage(btnBackMenu, (this.width - btnBackMenu.width) / 2 - 200, 500);
-			}
+				//ctx.drawImage(btnBackMenu, (this.width - btnBackMenu.width) / 2, 400);
+			btnBackMenu.SetPos(this.width/2 - this.height/8, this.height - this.height/4);
+			btnBackMenu.draw();
+		break;
+		
+		case 'view_level':	
+			//enabled=true;
+			currentLevel=N_level;
+			circlesCount=levels[currentLevel][1].length;
+			var scaleRect=this.height/3/circlesCount;
+			clear(btnBackMenu.x,btnBackMenu.y,btnBackMenu.width,btnBackMenu.height);
+			ctx.fillStyle='rgba(10,10,10,0.5)';
+			ctx.fillRect(0, 0, this.width, this.height/6);
+			//ctx.fillRect(this.width/2-scaleRect*circlesCount/2, this.height/5.5, scaleRect*circlesCount, scaleRect*circlesCount);
+			ctx.fillRect(0, this.height - this.height/6, this.width, this.height/6);
+			ctx.fillStyle='rgba(10,10,10,0.85)';
+			ctx.fillRect(0, this.height/6, this.width, this.height-this.height/3);
+			btnBackMenu.SetPos(this.width/2-this.height/4, this.height - this.height/2.2);
+			btnBackMenu.draw();
+			btnResume.SetPos(this.width/2, this.height - this.height/2.2);
+			btnResume.draw();
+			
+			//console.log(circlesCount, currentLevel,(blockSize*0.04)/2, -circlesCount*blockSize*0.3-50, 1*blockSize*0.301, 1*blockSize*0.301);
+			drawLevel(ctx, this.width/2-scaleRect*circlesCount/2, this.height/5.5, scaleRect);
+		break;
+		
+		case 'pause':
+			ctx.fillStyle='rgba(10,10,10,0.5)';
+			ctx.fillRect(0, 0, this.width, this.height/6);
+			ctx.fillRect(0, this.height - this.height/6, this.width, this.height/6);
+			ctx.fillStyle='rgba(10,10,10,0.8)';
+			ctx.fillRect(0, this.height/6, this.width, this.height-this.height/3);
+			btnToLevels.draw();
+			btnMusic.draw();
+			btnSFX.draw();
+			btnRestart.draw();
+			btnResume.draw();		
+		break;
+		
+		case 'win':
+			clear();
+			ctx.fillStyle='rgba(10,10,10,0.5)';
+			ctx.fillRect(0, 0, this.width, this.height/6);
+			ctx.fillRect(0, this.height - this.height/6, this.width, this.height/6);
+
+			ctx.fillStyle='rgba(10,10,10,0.8)';
+			ctx.fillRect(0, this.height/6, this.width, this.height-this.height/3);
+			/*if(enableSFX){
+				soundCelebrate.play();
+			}*/
+			if(bang.isPlaying())
+				bang.draw();
+			ctx.drawImage(winner, (this.width - winner.width) / 2, this.height/4);
+			btnToLevels.draw();	
+			btnRestart.draw();
+			btnNextLevel.draw();
+		
+		break;
 		}
+		ctx.restore();
 	}
 	
 	this.click = function(clickX, clickY) {
-		if (page == 'main') {
-			if (clickX > btnNewGameX && clickY > btnNewGameY 
-					&& clickX < btnNewGameX + btnNewGameWidth
-					&& clickY < btnNewGameY + btnNewGameHeight) {
-				page = 'levels';
+		switch(this.page) {
+		case 'main':
+			if (btnNewGame.checkMouse(clickX, clickY)) {
+				this.page = 'levels';
+				clear();
+				this.draw();
 			}
-			
-			if (clickX > btnSettingsX && clickY > btnSettingsY 
-					&& clickX < btnSettingsX + btnSettingsWidth
-					&& clickY < btnSettingsY + btnSettingsHeight) {
-				page = 'settings';
-			}
-		} else if (page == 'settings') {
-			var btnBackMenuX = (this.width - btnBackMenu.width) / 2;
+
+			if (btnSettings.checkMouse(clickX, clickY)) {
+				this.page = 'settings';
+				clear();
+				this.draw();
+			}			
+		break;
+		
+		case 'settings' :
+			/*var btnBackMenuX = (this.width - btnBackMenu.width) / 2;
 			var btnBackMenuY = 290;
 			if (clickX > btnBackMenuX && clickY > btnBackMenuY 
 					&& clickX < btnBackMenuX + btnBackMenu.width
 					&& clickY < btnBackMenuY + btnBackMenu.height) {
-				page = 'main';
-			}
-		} else if (page == 'levels') {
-			var btnBackMenuX = (this.width - btnBackMenu.width) / 2 - 200;
-			var btnBackMenuY = 500;
-			if (clickX > btnBackMenuX && clickY > btnBackMenuY 
-					&& clickX < btnBackMenuX + btnBackMenu.width
-					&& clickY < btnBackMenuY + btnBackMenu.height) {
-				page = 'main';
-			}
-			for (var i = 0; i < this.CountLevel; i++) {
-				if (isLevelBlocked[i]) {
-					break;
-				}
-				var x = i % 3 - 1;
-				var y = Math.floor(i / 3) - 1;
-				var btnsLevelX = (this.width - btnsLevel[i].width) / 2 + x * 100;
-				var btnsLevelY = 200 + y * 100;
-				if (clickX > btnsLevelX && clickY > btnsLevelY 
-						&& clickX < btnsLevelX + btnsLevel[i].width
-						&& clickY < btnsLevelY + btnsLevel[i].height) {
-					this.enabled = !this.enabled;
-					this.newGame(i);
-					break;
+				this.page = 'main';
+			}*/
+			if (btnMusic.checkMouse(clickX, clickY)) {
+				if(this.enableMusic){
+					this.enableMusic=false;
+					backgroundSound.pause();
+					btnMusic.setState('light');	
+				}else{
+					this.enableMusic=true;
+					backgroundSound.play();
+					btnMusic.setState('normal');
 				}
 			}
+			if (btnSFX.checkMouse(clickX, clickY)) {
+				if(this.enableSFX){
+					this.enableSFX=false;
+					btnSFX.setState('light');
+				}else{
+					this.enableSFX=true;
+					btnSFX.setState('normal');
+				}
+			}			
+			if (btnBackMenu.checkMouse(clickX, clickY)) {
+				this.page = 'main';
+				clear();
+				this.draw();
+			}	
+			if (btnHint.checkMouse(clickX, clickY)) {
+				clearInterval(id);
+				clear();
+				ctx.setTransform(1, 0, 0, 1, 0, 0);
+				currentLevel=0;
+				circlesCount=levels[currentLevel][1].length;
+				hint = new Hint(ctx, this.width, this.height, (this.height/4)/circlesCount);
+				this.page = 'hints';
+				this.draw();
+			}	
+		break;
+		
+		case 'hints':
+			if (btnExitGame.checkMouse(clickX, clickY)) {
+				hint.stop();
+				this.page = 'main';
+				btnExitGame.SetPos(this.width - this.height/4, this.height-this.height/4, this.height/4, this.height/4);
+				id = setInterval(drawScene, 30);
+				this.page_hint = 0;
+			}	
+			if(this.page_hint<2){
+			if (btnNext.checkMouse(clickX, clickY)) {
+				//clear(0,0,this.width, this.height-this.height/3);
+				if(!blocked){
+					this.page_hint = this.page_hint + 1;
+					if(this.page_hint==1)
+					{
+						hint.shiftRect(0,1);
+					}
+					if(this.page_hint==2){
+						hint.shiftRect(2,2);
+					}
+					this.page = 'hints';
+					this.draw();
+				}
+			}}	
+			if(this.page_hint>0){
+			if (btnPrevious.checkMouse(clickX, clickY)) {
+				//clear(0,0,this.width, this.height-this.height/3);
+				if(!blocked){
+					this.page_hint = this.page_hint - 1;
+					this.page = 'hints';
+					if(this.page_hint==1)
+					{
+						hint.shiftRect(5,2);
+					}
+					if(this.page_hint==0){
+						hint.shiftRect(8,1);
+					}
+					this.draw();
+				}
+			}
+		}			
+		break;
+		
+		case 'levels' :
+			if (btnBackMenu.checkMouse(clickX, clickY)) {
+				this.page = 'main';
+				clear();
+				this.draw();
+			}
+			else {
+				for (var i = 0; i < this.CountLevel; i++) {
+				
+					if (btnsLevel[i].checkMouse(clickX, clickY)) {				
+						this.page = 'view_level';
+						//clear();
+						N_level = i;
+						this.draw();
+					//this.enabled = !this.enabled;
+						//this.newGame(i);
+					//	break;
+					}
+				}
+				
+			}
+	
+		break;
+		
+		case 'view_level' :
+			if (btnBackMenu.checkMouse(clickX, clickY)) {
+				this.page = 'levels';
+				clear();
+				this.draw();
+			}
+			if (btnResume.checkMouse(clickX, clickY)) {
+				clear();
+				this.enabled = !this.enabled;
+				this.newGame(N_level);
+				btnResume.SetPos(this.width/2 + this.height/8, this.height - this.height/2);
+				break;
+			}
+			//btnBackMenu.SetPos(this.width/2 - this.width/14, this.height - this.width/7);
+			//btnResume.SetPos(this.width/2 + this.width/14, this.height - this.height/2);	
+		break;
+		case 'pause' :
+		//clear(btnPause_Menu.x,btnPause_Menu.y,btnPause_Menu.width,btnPause_Menu.height);
+			if (btnToLevels.checkMouse(clickX, clickY)) {
+				this.page = 'levels';
+				clear();
+				this.draw();
+			}
+			if (btnMusic.checkMouse(clickX, clickY)) {
+				if(this.enableMusic){
+					this.enableMusic=false;
+					backgroundSound.pause();
+					btnMusic.setState('light');	
+				}else{
+					this.enableMusic=true;
+					backgroundSound.play();
+					btnMusic.setState('normal');
+				}
+			}
+			if (btnSFX.checkMouse(clickX, clickY)) {
+				if(this.enableSFX){
+					this.enableSFX=false;
+					btnSFX.setState('light');
+				}else{
+					this.enableSFX=true;
+					btnSFX.setState('normal');
+				}
+			}
+			if (btnResume.checkMouse(clickX, clickY)) {
+				clear();
+				this.enabled=false;
+				drawLevel(ctx, -circlesCount*blockSize*0.3-50, 0, blockSize*0.301);
+				drawBorder(ctx);
+				btnPause_Menu.draw();
+			}
+			if (btnRestart.checkMouse(clickX, clickY)) {
+				clear();
+				this.newGame(currentLevel);
+				this.enabled=false;
+			}
+			
+		break;
+		case 'win' :
+			if (btnToLevels.checkMouse(clickX, clickY)) {
+				this.page = 'levels';
+				clear();
+				clearBackground();
+				this.draw();
+			}
+			if (btnRestart.checkMouse(clickX, clickY)) {
+				clear();
+				clearBackground();
+				this.newGame(currentLevel);
+				this.enabled=false;
+			}
+			if (btnNextLevel.checkMouse(clickX, clickY)) {
+				clear();
+				clearBackground();
+				this.newGame(currentLevel+1);
+				this.enabled=false;
+			}
+		break;
 		}
 	}
 	
 	this.move = function(mouseX, mouseY) {
-		if (mouseX > btnNewGameX && mouseY > btnNewGameY 
-				&& mouseX < btnNewGameX + btnNewGameWidth
-				&& mouseY < btnNewGameY + btnNewGameHeight) {
-			isNewGameSelect = true;
-		} else {
-			isNewGameSelect = false;
-		}
+		switch(this.page) {
+		case 'main':
+			if (btnNewGame.checkMouse(mouseX, mouseY)) {
+				if(btnNewGame.getState() == 'normal')
+				{
+					//console.log();
+					btnNewGame.setState('light',function() {ctx.drawImage(eyes, (btnNewGame.width - eyes.width) / 2, (btnNewGame.height - eyes.height) / 2);});
+				}
+			} else {
+				if(btnNewGame.getState() == 'light')
+				{
+					btnNewGame.setState('normal',function() {ctx.drawImage(eyes, (btnNewGame.width - eyes.width) / 2, (btnNewGame.height - eyes.height) / 2);});
+				}
+			}
+			
+			if (btnSettings.checkMouse(mouseX, mouseY)) {
+				if(btnSettings.getState() == 'normal')
+				{
+					//console.log();
+					clear(btnSettings.x,btnSettings.y,btnSettings.width,btnSettings.height);
+					btnSettings.setState('light');
+				}
+			} else {
+				if(btnSettings.getState() == 'light')
+				{
+					clear(btnSettings.x,btnSettings.y,btnSettings.width,btnSettings.height);
+					btnSettings.setState('normal');
+				}
+			}			
+			
+		break;
 		
-		if (mouseX > btnExitGameX && mouseY > btnExitGameY 
-				&& mouseX < btnExitGameX + btnExitGameWidth
-				&& mouseY < btnExitGameY + btnExitGameHeight) {
-			isExitGameSelect = true;
-		} else {
-			isExitGameSelect = false;
-		}
-		
-		if (mouseX > btnSettingsX && mouseY > btnSettingsY 
-				&& mouseX < btnSettingsX + btnSettingsWidth
-				&& mouseY < btnSettingsY + btnSettingsHeight) {
-			isSettingsSelect = true;
-		} else {
-			isSettingsSelect = false;
 		}
 	}
 	
+	
 	this.show = function() {
-		
 	}
 	
 }
