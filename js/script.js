@@ -752,8 +752,8 @@ $(function(){
     ctx = canvas.getContext('2d');
 	canvasBcg = document.getElementById('background');
     ctxBcg = canvasBcg.getContext('2d');
-	width = $(window).width();
-	height = $(window).height();
+	width = document.body.clientWidth;
+	height = document.body.clientHeight;
 	
 	canvas.width = width;
 	canvasBcg.width = width;
@@ -870,11 +870,16 @@ $(function(){
 	// Загрузка музыки и звуков
 	
 	// привязываем событие нажатия мыши (для перетаскивания)
-	$('#scene').mousedown(function(e) {
+	var mousedownf=function(e) {
 	//menu.draw(ctx);
 		
-		clickX = e.offsetX || 0;
-		clickY = e.offsetY || 0;
+		if (e.offsetX){
+			clickX = e.offsetX || 0;
+			clickY = e.offsetY || 0;
+		}else{
+			clickX = e.touches[0].pageX || 0;
+			clickY = e.touches[0].pageY || 0;
+		}
 		
 		if (menu.enabled) {
 			menu.click(clickX, clickY);
@@ -974,11 +979,29 @@ $(function(){
 			}
 		}
 		
-    });
+    }//);
 
-    $('#scene').mousemove(function(e) { // привязываем событие движения мыши для перетаскивания выбранной окружности
-            var mouseX = e.offsetX || 0;
-            var mouseY = e.offsetY || 0;
+	var support=0;
+	try {
+		document.createEvent('TouchEvent');
+		support=1;
+	} catch (e) {
+		support=0;
+	}
+	if(support==1) canvas.addEventListener('touchstart',mousedownf);
+	else canvas.addEventListener('mousedown',mousedownf);
+	support=0;
+
+    var mousemovef=function(e) { // привязываем событие движения мыши для перетаскивания выбранной окружности
+		var mouseX;
+		var mouseY;
+		if (e.offsetX){
+			mouseX = e.offsetX || 0;
+			mouseY = e.offsetY || 0;
+		}else{
+			mouseX = e.touches[0].pageX || 0;
+			mouseY = e.touches[0].pageY || 0;
+		}
 
 	if (menu.enabled) {
 		menu.move(mouseX, mouseY);
@@ -1064,9 +1087,19 @@ $(function(){
 			}
 			
         }
-	});
+	}//);
 
-    $('#scene').mouseup(function(e) { // событие mouseup - очистка выбранной окружности
+	try {
+		document.createEvent('TouchEvent');
+		support=1;
+	} catch (e) {
+		support=0;
+	}
+	if(support==1) canvas.addEventListener('touchmove',mousemovef);
+	else canvas.addEventListener('mousemove',mousemovef);
+	support=0;
+
+    var mouseupf=function(e) { // событие mouseup - очистка выбранной окружности
 		
 		if (menu.enabled) {
 			menu.clickUp(clickX, clickY);
@@ -1222,7 +1255,17 @@ $(function(){
 		lockX = false;
 		lockY = false;
 		
-    });
+    }//);
+
+	
+	try {
+		document.createEvent('TouchEvent');
+		support=1;
+	} catch (e) {
+		support=0;
+	}
+	if(support==1) canvas.addEventListener('touchend',mouseupf);
+	else canvas.addEventListener('mouseup',mouseupf);
 
     id = setInterval(drawScene, 30); // скорость отрисовки
 	});
